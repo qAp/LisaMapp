@@ -1,0 +1,687 @@
+
+
+
+
+import cmath
+import numpy
+import LISAresponse
+import Utilities3
+import pylab
+import matplotlib.pyplot as pyplot
+
+
+
+
+class SkyMap(object):
+
+    def __init__( self ):
+        self.__ntrunc = []
+        self.__plm    = []
+        self.__qlm    = []
+        self.__xlm    = []
+
+        self.__sky    = []
+        self.__P      = []
+        self.__Q      = []
+        self.__X      = []
+
+    def get_ntrunc( self ):
+        return self.__ntrunc
+    ntrunc = property( get_ntrunc )
+    
+    def get_plm( self ):
+        return self.__plm
+    plm = property( get_plm )
+    
+    def get_qlm( self ):
+        return self.__qlm
+    qlm = property( get_qlm )
+    
+    def get_xlm( self ):
+        return self.__xlm
+    xlm = property( get_xlm )
+
+    def get_sky( self ):
+        return self.__sky
+    sky = property( get_sky )
+    
+    def get_P( self ):
+        return self.__P
+    P = property( get_P )
+
+    def get_Q( self ):
+        return self.__Q
+    Q = property( get_Q )
+
+    def get_X( self ):
+        return self.__X
+    X = property( get_X )
+
+    def TotalPower( self , realimag='real' ):
+        if realimag == 'real' :
+            powerdensity = numpy.copy( self.P )
+        elif realimag == 'imag' :
+            powerdensity = numpy.copy( self.Q )
+        else:
+            raise Exception , "realimag must either be 'real' or 'imag'. "
+
+        dthe = numpy.radians( self.sky.lats[0] - self.sky.lats[1] )
+        dphi = numpy.radians( self.sky.lons[1] - self.sky.lons[0] )
+
+        power = 0
+        for i,elat in enumerate( list( self.sky.lats ) ) :
+            for j,elon in enumerate( list( self.sky.lons ) ) :
+                the = numpy.radians( 90 - elat )
+                power += numpy.sin( the ) * powerdensity[ i,j ]**2
+        power = dthe * dphi * power 
+        return power
+
+
+    def AngularPower( self , l=0 , realimag='real' ) :
+        if realimag == 'real' :
+            xlm = numpy.copy( self.plm )
+        elif realimag == 'imag' :
+            xlm = numpy.copy( self.qlm )
+        else :
+            raise Exception , "realimag must either be 'real' or 'imag'."
+
+        mlvec = LISAresponse.getMLvec( self.ntrunc )        
+
+        angpower = 0
+        for m in range( l+1 ) :
+            dangpower = abs( xlm[ mlvec.index( (m,l) ) ] )**2
+            if m == 0 :
+                angpower += dangpower
+            else :
+                angpower += 2 * dangpower
+        return angpower
+            
+    def FractionalPower( self , l=0 , realimag='real' ) :
+        return self.AngularPower( l=l , realimag=realimag ) / self.TotalPower( realimag=realimag )
+
+
+
+class xlmSkyMap( SkyMap ):
+
+    def __init__( self , ntrunc=5 , xlm=None ):
+        super( xlmSkyMap , self ).__init__()
+        
+        if xlm == None:
+            self._SkyMap__xlm = numpy.zeros( ( (ntrunc+1)**2, ) , dtype='complex' )
+            self._SkyMap__ntrunc = ntrunc
+        else:
+            ntrunc = numpy.sqrt( xlm.shape[0] ) - 1
+            if ( ntrunc % 1 ) != 0 :
+                print "The length of the entered numpy array does not correspond to an integer ntrunc."
+                raise ValueError
+            else:
+                self._SkyMap__xlm =  numpy.copy( xlm )
+                self._SkyMap__ntrunc = int( ntrunc )
+        return
+
+    def alter_xlm( self , add_on=False , *xlms ):
+        if xlms == ():
+            print "No arrays to add/overwrite."
+            return
+        
+        for xlm in xlms:
+            if xlm.shape != self.xlm.shape:
+                continue
+            if add_on == False:
+                self._SkyMap__xlm =  numpy.copy( xlm )
+            elif add_on == True:
+                self._SkyMap__xlm += xlm 
+        return
+
+    def alter_ml( self , add_on=False , *mlvs ):
+        if mlvs == ():
+            print "No (m,l) to add/overwrite."
+            return
+
+        mlvec = LISAresponse.getMLvec( self.ntrunc )
+
+        for mlv in mlvs:
+            m , l , value = mlv
+
+            if (m,l) not in mlvec:
+                print "(%d,%d) is out of range. lmax = %d . " % ( m , l ,self.ntrunc )
+                continue
+
+            indx = mlvec.index( (m,l) )
+            if add_on==False:
+                self._SkyMap__xlm[ indx ] = value
+            elif add_on==True:
+                self._SkyMap__xlm[ indx ] = self._SkyMap__xlm[ indx ] + value
+        return
+
+    def xlm_to_plm( self ):
+        indxpn = LISAresponse.getMLvec( self.ntrunc , 'pn' )
+        plm = numpy.zeros( self.xlm.shape , dtype='complex' )
+        for i,ml in enumerate( indxpn ) :
+            m , l = ml[0] , ml[1]
+            k = indxpn.index( (-m,l) )
+            plm[i] = ( self.xlm[i] + (-1)**m * numpy.conj( self.xlm[k] ) ) / 2
+        indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+        self._SkyMap__plm = numpy.copy( plm[ : len(indxp) ] )
+        return
+
+    def xlm_to_qlm( self ):
+        indxpn = LISAresponse.getMLvec( self.ntrunc , 'pn' )
+        qlm = numpy.zeros( self.xlm.shape , dtype='complex' )
+        for i,ml in enumerate( indxpn ) :
+            m , l = ml[0] , ml[1]
+            k = indxpn.index( (-m,l) )
+            qlm[i] = ( self.xlm[i] - (-1)**m * numpy.conj( self.xlm[k] ) ) / 2j
+        indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+        self._SkyMap__qlm = numpy.copy( qlm[ :len(indxp) ] )
+        return
+
+    def create_sky( self , nlon=6 , nlat=4 ):
+        self._SkyMap__sky = LISAresponse.mySpharmt( nlon , nlat )
+        return
+    
+    def plm_to_P( self ):
+        indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+        to_pyspharm = numpy.zeros( ( len(indxp), ) )
+        for i,ml in enumerate( indxp ):
+            to_pyspharm[i] = (-1)**ml[0] / numpy.sqrt( 2*numpy.pi )
+
+        self._SkyMap__P = self.sky.spectogrd( to_pyspharm * self.plm )
+        return
+
+    def qlm_to_Q( self ):
+        indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+        to_pyspharm = numpy.zeros( ( len(indxp), ) )
+        for i,ml in enumerate( indxp ):
+            to_pyspharm[i] = (-1)**ml[0] / numpy.sqrt( 2*numpy.pi )
+
+        self._SkyMap__Q = self.sky.spectogrd( to_pyspharm * self.qlm )
+        return
+
+    def PQ_to_X( self ):
+        if [] in [ self.P , self.Q ]:
+            print "Make sure P and Q are calculated first."
+            raise
+        self._SkyMap__X = self.P + 1j*self.Q
+        return
+
+
+class XSkyMap( SkyMap ):
+    
+    def __init__( self , nlat=3 , nlon=4  , X=None ):
+        super( XSkyMap , self ).__init__()
+
+        if X == None:
+            if nlat < 3 or nlon < 4:
+                print "Make sure that nlat >=3, and nlon >=4."
+                raise ValueError
+            else:
+                self._SkyMap__X   = numpy.zeros( ( nlat , nlon ) , dtype='complex' )
+                self._SkyMap__sky = LISAresponse.mySpharmt( nlon , nlat )
+        else:
+            nlat , nlon = X.shape
+            self._SkyMap__X   = numpy.copy( X )
+            self._SkyMap__sky = LISAresponse.mySpharmt( nlon , nlat )
+        return
+
+    def alter_X( self , add_on=False , *Xs ):
+        if Xs == ():
+            print "No arrays to add/overwrite."
+            return
+
+        for X in Xs:
+            if X.shape != self.X.shape:
+                continue
+            if add_on == False:
+                self._SkyMap__X = numpy.copy( X )
+            elif add_on == True:
+                self._SkyMap__X += X
+        return
+
+
+    def X_to_P( self ):
+        self._SkyMap__P = numpy.real( self.X )
+        return
+
+    def X_to_Q( self ):
+        self._SkyMap__Q = numpy.imag( self.X )
+        return
+
+    def ntrunc_equals( self , ntrunc ):
+        if ntrunc > self.sky.nlat - 1:
+            print "Make sure ntrunc <= nlat - 1."
+            raise ValueError
+        else:
+            self._SkyMap__ntrunc = ntrunc
+        return
+
+    def P_to_plm( self ):
+        indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+        to_standard = numpy.zeros( ( len(indxp), ) )
+
+        for i, ml in enumerate( indxp ):
+            to_standard[i] = (-1)**ml[0] * numpy.sqrt( 2*numpy.pi )
+
+        self._SkyMap__plm = to_standard * self.sky.grdtospec( self.P , self.ntrunc )
+        return
+
+    def Q_to_qlm( self ):
+        indxp =LISAresponse.getMLvec( self.ntrunc , 'p' )
+        to_standard = numpy.zeros( ( len(indxp), ) )
+
+        for i, ml in enumerate( indxp ):
+            to_standard[i] = (-1)**ml[0] * numpy.sqrt( 2*numpy.pi )
+                        
+        self._SkyMap__qlm = to_standard * self.sky.grdtospec( self.Q , self.ntrunc )
+        return
+
+    def plmqlm_to_xlm( self ):
+        indxp  = LISAresponse.getMLvec( self.ntrunc , 'p' )
+        indxpn = LISAresponse.getMLvec( self.ntrunc , 'pn' )
+        xlm = numpy.zeros( ( len(indxpn), ) , dtype='complex' )
+        for i,ml in enumerate( indxpn ):
+            m , l = ml
+            k = indxp.index( ( abs(m),l ) )
+            if m >= 0:
+                xlm[i] = self.plm[k] + 1j*self.qlm[k]
+            else:
+                xlm[i] = (-1)**m * ( numpy.conj( self.plm[k] ) + 1j*numpy.conj( self.qlm[k] ) )
+        self._SkyMap__xlm = numpy.copy( xlm )
+        return
+        
+            
+
+
+    
+
+from mpl_toolkits.basemap import Basemap , addcyclic
+
+def project_SkyMap_Mollweide( skymap , Pnorm=1 , Qnorm=1
+                              , Ppath=None , Qpath=None ):
+
+    Pw , lonsw = addcyclic( skymap.P , skymap.sky.lons )
+    Qw , lonsw = addcyclic( skymap.Q , skymap.sky.lons )
+    meshlon , meshlat = pylab.meshgrid( lonsw , skymap.sky.lats )
+
+    projection = Basemap( projection='moll' , lon_0=180 , resolution='c' )
+#    projection = Basemap( projection='ortho' , lat_0=60 , lon_0=180 , resolution='c' )
+    projection.drawmapboundary()
+    x , y = projection( meshlon , meshlat )
+
+    if Ppath == None :
+        pass
+    else :
+        fig = pyplot.figure( figsize = (8,8) )
+        ax = fig.add_axes( [ 0.05 , 0.15 , 0.8 , 0.8 ] )
+        projection.contourf( x , y , Pnorm*Pw , 30 )
+        projection.drawmeridians( numpy.arange(0,360,30) )
+        projection.drawparallels( numpy.arange(-90,90,30) , labels=[1,0,0,0] )
+        pos = ax.get_position()
+        l , b , w , h = pos.bounds
+        cax = pyplot.axes( [ l+w+0.03 , b , 0.04 , h ] )
+        pyplot.colorbar( cax=cax , orientation='vertical' , format='%.1e' )
+        pylab.savefig( Ppath )
+
+    if Qpath == None :
+        pass
+    else :
+        fig = pyplot.figure( figsize = (8,8) )
+        ax = fig.add_axes( [ 0.05 , 0.15 , 0.8 , 0.8 ] )
+        projection.contourf( x , y , Qnorm*Qw , 30 )
+        projection.drawmeridians( numpy.arange(0,360,30) )
+        projection.drawparallels( numpy.arange(-90,90,30) , labels=[1,0,0,0] )
+        pos = ax.get_position()
+        l , b , w , h = pos.bounds
+        cax = pyplot.axes( [ l+w+0.03 , b , 0.04 , h ] )
+        pyplot.colorbar( cax=cax , orientation='vertical' )
+        pylab.savefig( Qpath )
+    return
+
+                                        
+
+def project_SkyMap( skymap , Pnorm=1 , Qnorm=1 ,
+                    Ppath = None , Qpath = None ) :
+
+    Lons , Lats = numpy.meshgrid( skymap.sky.lons , skymap.sky.lats )
+
+    if Ppath == None :
+        pass
+    else :
+        pyplot.figure()
+        pyplot.contourf( Lons , Lats , Pnorm * skymap.P )
+        pyplot.grid( b='on' ) ; pyplot.xlim( (0,360) ) ; pyplot.ylim( (-90,90) )
+        pyplot.xticks( numpy.arange( 0 , 360+30 , 30 ) )
+        pyplot.yticks( numpy.arange( -90 , 90+30 , 30 ) )
+        pyplot.xlabel( 'longitude[degrees]' ) ; pyplot.ylabel( 'latitude[degrees]' )
+        pyplot.title( 'real part' )
+        pyplot.colorbar( format='%.1e' )
+        pyplot.savefig( Ppath )
+
+    if Qpath == None :
+        pass
+    else :
+        pyplot.figure()
+        pyplot.contourf( Lons , Lats , Qnorm * skymap.Q )
+        pyplot.grid( b='on' ) ; pyplot.xlim( (0,360) ) ; pyplot.ylim( (-90,90) )
+        pyplot.xticks( numpy.arange( 0 , 360+30 , 30 ) )
+        pyplot.yticks( numpy.arange( -90 , 90+30 , 30 ) )
+        pyplot.xlabel( 'longitude[degrees]' ) ; pyplot.ylabel( 'latitude[degrees]' )
+        pyplot.title( 'imaginary part' )
+        pyplot.colorbar( format='%.1e' )
+        pyplot.savefig( Qpath )
+    return
+
+
+
+
+
+def Convolve( orf , skymap , GWSpectralSlope=-3 ):
+    
+    if not orf.ntrunc == skymap.ntrunc:
+        print "Make sure that lmax of the orf and the skymap are equal."
+        raise ValueError
+    else:
+        g = orf.getMultipleMoments( 'pn' )
+        f = g.Offset1 + g.Cadence1 * numpy.arange( g.data.shape[1] ) 
+        H = f**GWSpectralSlope
+        data = H * numpy.sum( numpy.transpose( g.data ) * skymap.xlm , 1 )
+        cspectrum = Utilities3.Coarsable( data ,
+                                          Offset1 = g.Offset1, Cadence1 = g.Cadence1 )
+
+    return cspectrum
+    
+
+
+class TheZs( object ):
+    def __init__( self , N=10 , seed=None ):
+
+        numpy.random.seed( seed )
+        p = [ numpy.random.standard_normal( (N,) ) for i in range(3) ]
+        q = [ numpy.random.standard_normal( (N,) ) for i in range(3) ]
+
+        self.__z1 = ( p[0] + 1j*q[0] ) / numpy.sqrt( 2 )
+        self.__z2 = ( p[1] + 1j*q[1] ) / numpy.sqrt( 2 )
+        self.__z3 = ( p[2] + 1j*q[2] ) / numpy.sqrt( 2 )
+
+        self.__seed = seed
+        return
+
+    def get_z1( self ):
+        return self.__z1
+    z1 = property( get_z1 )
+
+    def get_z2( self ):
+        return self.__z2
+    z2 = property( get_z2 )
+
+    def get_z3( self ):
+        return self.__z3
+    z3 = property( get_z3 )
+
+    def get_seed( self ):
+        return self.__seed
+    seed = property( get_seed )
+
+
+
+class ShortTermFT( object ):
+    def __init__( self , s1=[] , s2=[] , s3=[] ):
+
+        self.__s1 , self.__s2 , self.__s3 = s1 , s2 , s3
+
+        return
+
+    def get_s1( self ):
+        return self.__s1
+    s1 = property( get_s1 )
+
+    def get_s2( self ):
+        return self.__s2
+    s2 = property( get_s2 )
+
+    def get_s3( self ):
+        return self.__s3
+    s3 = property( get_s3 )
+
+    def alter_s1( self , s1=[] ):
+        self.__s1 = s1
+        return
+
+    def alter_s2( self , s2=[] ):
+        self.__s2 = s2
+        return
+
+    def alter_s3( self , s3=[] ):
+        self.__s3 = s3
+        return
+
+
+
+def CSpectra_to_ShortTermFT( cspecdict , seed=None ):
+
+    cspecnames = [ '11' , '12' , '13' ,
+                   '22' , '23' ,
+                   '33' ]
+
+    cspeclist = [ cspecdict[ cspecname ] for cspecname in cspecnames ]
+
+    freqlist = [ ( cspec.Offset1 , cspec.Cadence1 , cspec.data.shape[0] ) for cspec in cspeclist ]
+    for i in range( 1 , len( freqlist ) ):
+        if not freqlist[0] == freqlist[i]:
+            print "Make sure all cross-spectra's frequencies are the same."
+            raise ValueError
+    
+    Nf       = cspeclist[0].data.shape[0]
+    fOffset  = cspeclist[0].Offset1
+    fCadence = cspeclist[0].Cadence1
+
+    Z = TheZs( Nf , seed )
+
+    sdatas = [ numpy.zeros( (Nf,) , dtype='complex' ) for i in range(3) ]
+
+    for k in range( Nf ):
+
+        clist = [ cspec.data[k] for cspec in cspeclist ]
+        cmatrix = numpy.array( [ [ clist[0]               , clist[1]               , clist[2] ] ,
+                                 [ numpy.conj( clist[1] ) , clist[3] , clist[4] ]  ,
+                                 [ numpy.conj( clist[2] ) , numpy.conj( clist[4] ) , clist[5] ]
+                                 ] )
+
+        w , V = pylab.eig( cmatrix )
+
+        for ww in list( w ):
+            if ww <= 0:
+                print "Warning: trying to simulate an unphysical signal."
+
+        Vadjoint = numpy.transpose( numpy.conjugate( V ) )
+        if not numpy.allclose( numpy.dot( V , Vadjoint ) , numpy.diag( numpy.ones( V.shape[0] ) ) ):
+            print "Warning: the matrix of eigenvectors is not unitary."
+        
+        s = ( Z.z1[k]*cmath.sqrt( numpy.real( w[0] ) )*V[:,0] + 
+              Z.z2[k]*cmath.sqrt( numpy.real( w[1] ) )*V[:,1] +
+              Z.z3[k]*cmath.sqrt( numpy.real( w[2] ) )*V[:,2]
+              )
+
+
+        sdatas[0][k] , sdatas[1][k] , sdatas[2][k] = numpy.conj( s )
+
+
+    scoarsables = [ Utilities3.Coarsable( sdata , Offset1=fOffset , Cadence1=fCadence ) for sdata in sdatas ]    
+    shortft = ShortTermFT( s1=scoarsables[0] , s2=scoarsables[1] , s3=scoarsables[2] )
+
+    return shortft
+
+
+class TimeSeries( object ):
+    def __init__( self , s1=[] , s2=[] , s3=[] ):
+
+        self.__s1 , self.__s2 , self.__s3 = s1 , s2 , s3
+
+        return
+
+    def get_s1( self ):
+        return self.__s1
+    s1 = property( get_s1 )
+    
+    def get_s2( self ):
+        return self.__s2
+    s2 = property( get_s2 )
+    
+    def get_s3( self ):
+        return self.__s3
+    s3 = property( get_s3 )
+    
+    def alter_s1( self , s1=[] ):
+        self.__s1 = s1
+        return
+    
+    def alter_s2( self , s2=[] ):
+        self.__s2 = s2
+        return
+    
+    def alter_s3( self , s3=[] ):
+        self.__s3 = s3
+        return
+    
+
+
+
+def InverseFT( shortft , Neven=False , fNyq=False , tOffset=0 ):
+    
+    ftlist = [ shortft.s1 , shortft.s2 , shortft.s3 ]
+
+    tslist = []
+    for ft in ftlist:
+
+        if ft.Offset1 == 0:
+            pftdata = ft.data
+        else:
+            pftdata = numpy.array( [0] + list( ft.data ) )
+
+
+        if Neven == False:
+            nftdata = numpy.conj( numpy.flipud( pftdata ) )[:-1]
+            ftdata = numpy.concatenate( ( pftdata , nftdata ) )
+
+        elif ( Neven , fNyq ) == ( True , True  ):
+            nftdata = numpy.conj( numpy.flipud( pftdata ) )[1:-1]
+            ftdata = numpy.concatenate( ( pftdata , nftdata ) )
+
+        elif ( Neven , fNyq ) == ( True , False ):
+            nftdata = numpy.conj( numpy.flipud( pftdata ) )[:-1]
+            ftdata = numpy.concatenate( ( pftdata , numpy.array( [0] ) , nftdata ) )
+
+        N = ftdata.shape[0] 
+        dt = 1. / ( N * ft.Cadence1 )
+        norm = numpy.sqrt( N / ( 2.*dt ) )
+
+        tsdata = pylab.ifft( norm * ftdata  )
+        tsdata = numpy.real( tsdata )
+        tslist += [ Utilities3.Coarsable( data=tsdata , Offset1=tOffset , Cadence1=dt ) ]
+
+    tsdict = {}
+    tsdict['s1'] , tsdict['s2'] , tsdict['s3'] = tslist[0] , tslist[1] , tslist[2]
+
+    return TimeSeries( **tsdict )
+
+
+def WindowAndJoin( lts , rts , leftover=None ):
+
+    if lts.data.shape != rts.data.shape :
+        raise Exception , "Left and right arrays' lengths not equal."
+    else:
+        N = lts.data.shape[0]
+
+    if lts.Cadence1 != rts.Cadence1 :
+        raise Exception , "Left and right cadences not equal."
+  
+    if N % 2 == 0:
+        lmid = N / 2
+    else:
+        lmid = ( N - 1 ) / 2
+
+    if not ( lts.Cadence1 * lmid  + lts.Offset1 ) == rts.Offset1 :
+        raise Exception , "Left's midpoint's offset not equal to right's offset."
+
+    if not leftover == None :
+        if not leftover.Cadence1 == lts.Cadence1:
+            raise Exception , "Input leftover's cadence not equal to left's cadence."
+        if not leftover.Offset1 == lts.Offset1 :
+            raise Exception , "Input leftover's offset not equal to left's offset."
+        if not leftover.data.shape  == lts.data[ :lmid ].shape :
+            raise Exception , "Input leftover's length not equal to left's left half's length."
+
+        window = numpy.sin( numpy.pi/N * numpy.arange( N ) )
+        winlts = window * lts.data
+        winrts = window * rts.data
+        
+        jointdata = numpy.concatenate( ( leftover.data + winlts[ :lmid ] , winlts[ lmid: ] + winrts[ :N-lmid ] ) )
+        joint = Utilities3.Coarsable( jointdata , Offset1=lts.Offset1 , Cadence1=lts.Cadence1 )
+        
+    else:
+
+        window = numpy.sin( numpy.pi/N * numpy.arange( N ) )
+        winrts = window * rts.data
+
+        jointdata = numpy.concatenate( ( lts.data[ :lmid ] ,
+                                         window[ lmid: ] * lts.data[ lmid: ] + winrts[ :N-lmid ] )
+                                       )
+        joint = Utilities3.Coarsable( jointdata , Offset1=lts.Offset1 , Cadence1=lts.Cadence1 )
+        
+    whatsleftdata = winrts[ N-lmid: ]
+    whatsleft = Utilities3.Coarsable( whatsleftdata ,
+                                      Offset1 = rts.Offset1 + ( N - lmid) * lts.Cadence1 ,
+                                      Cadence1 = lts.Cadence1 )
+    
+    return joint , whatsleft
+
+
+
+
+def checkPIXELCONVERSION( lmax , nlat , nlon ) :
+    """
+    INPUT:
+    lmax -- maximum degree of SpH, l
+    nlat -- number of latitudes
+    nlon -- number of longitudes 
+    OUTPUT:
+    U -- matrix for converting a matrix from SpH to PIXELS
+    lats -- latitudes, repeated nlon times
+    lons -- longitudes, repeated nlat times
+    """
+    indxpn = LISAresponse.getMLvec( lmax , 'pn' )
+    U = numpy.empty( ( nlat*nlon , len(indxpn) ) , dtype='complex' )
+    for i,ml in enumerate( indxpn ) :
+        M = xlmSkyMap( ntrunc=ml[-1] )
+        M.alter_ml( False , ( ml[0] , ml[-1] , 1 ) )
+        M.xlm_to_plm()
+        M.xlm_to_qlm()
+        M.create_sky( nlat=nlat , nlon=nlon )
+        M.plm_to_P()
+        M.qlm_to_Q()
+        M.PQ_to_X()
+        U[ :,i ] = numpy.reshape( M.X , ( nlat*nlon, ) )
+
+    lats = numpy.outer( M.sky.lats , numpy.ones( nlon ) )
+    lons = numpy.outer( numpy.ones( nlat ) , M.sky.lons )
+    lats = numpy.reshape( lats , ( nlat*nlon , ) )
+    lons = numpy.reshape( lons , ( nlat*nlon , ) )
+    return U , lats , lons
+
+
+def covarSpH2Pixel( covar , nlat , nlon ) :
+    """
+    INPUT:
+    covar --- covariance matrix in SpH basis
+    nlat --- number of latitudes
+    nlon --- number of longitudes
+    OUTPUT:
+    covarP --- covariance matrix in pixel basis
+    lats --- latitudes
+    lons --- longitudes
+    """
+    lmax = int( numpy.sqrt( covar.shape[0] ) - 1 )
+    U , lats , lons = checkPIXELCONVERSION( lmax , nlat , nlon )
+    Uh = numpy.transpose( numpy.conj( U ) )
+    covarP = numpy.dot( U , numpy.dot( covar , Uh ) )
+    return covarP , lats , lons

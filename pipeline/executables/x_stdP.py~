@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+import os
+import sys
+import glob
+import cPickle as cpkl
+import numpy as np
+import optparse 
+import AnisotropySearch as AS
+
+usage = """
+%prog GPATH stdPPATH\n
+GPATH   --- path to file for Fisher matrix G\n
+STDPPATH --- path to file in which to save stdP ( standard deviation of Plm )
+"""
+parser = optparse.OptionParser( usage = usage )
+
+parser.add_option( '--regMethod' , action='store' , dest='regMethod' , type='int' , default=1 ,
+                   help='The method to regularise the Fisher matrix with.' )
+
+parser.add_option( '--regCutoff' , action='store' , dest='regCutoff' , type='string' , default='9.5e-4' ,
+                   help='The cut-off for the regularisation of the Fisher matrix.' )
+
+parser.add_option( '--lmax' , action='store' , dest='lmax' , type='int' , default=15 ,
+                   help='l up to which to truncate G.'  )
+
+parser.add_option( '--strong_signal' , action='store_true' , dest='strong_signal' ,
+                   help='Include the strong signal bias' )
+
+parser.add_option( '--Spath' , action='store' , dest='Spath' , type='string' , nargs=1 , default='default' ,
+                   help='Path to the strong signal bias matrix' )
+
+( options , args ) = parser.parse_args()
+
+
+if len( args ) < 2 :
+    parser.error( 'You must specify GPATH and STDPPATH! See Help: ./x_stdP.py -h' )
+
+Gpath , stdPpath = args[ :2 ]
+
+stdPdir = os.path.dirname( stdPpath )
+
+fish = AS.FisherMatrix( Gpath , lmax = options.lmax )
+if options.regMethod == 0 :
+    print 'Calculating unregularised inverse of Fisher matrix...'
+    fishinv = fish.invert()
+else :
+    print "Calculating regularised inverse of Fisher matrix..."
+    fish.regularise( regMethod = options.regMethod , regCutoff = float( options.regCutoff ) )
+    fishinv = fish.reginvert()
+
+covarm = np.dot( fishinv , np.dot( fish.fish , fishinv ) )
+
+if options.strong_signal :
+    if options.Spath == 'default' :
+        Spath = os.path.dirname( stdPdir ) + '/S/S.pkl'
+    else :
+        Spath = options.Spath
+
+    if Spath not in glob.glob( Spath ) :
+        print 'Cannot  locate the bias matrix, skipping...'
+        pass
+    else :
+        print 'Including the strong signal bias...'
+        file = open( Spath , 'rb' ) ; Sdict = cpkl.load( file ) ; file.close()
+        Sdata = AS.get_lmax_subset_from( Sdict['S'].data , options.lmax )
+        covarm = np.dot( fishinv , np.dot( ( fish.fish + Sdata ) , fishinv ) )
+
+variance = np.diag( covarm )
+indxpn = AS.getMLvec( options.lmax )
+for i , ml in enumerate( indxpn ) :
+    if variance[i] < 0 :
+        print "Warning: negative variance for (m,l)=(%d,%d)" % ml
+        print "Taking the absolute value"
+        variance[i] = np.abs( variance[i] )
+
+stdP = np.sqrt( variance )
+
+print covarm[ 100:105 , 100:105 ]
+
+
+if stdPdir not in glob.glob( stdPdir ) :
+    os.system( 'mkdir %s' % stdPdir )
+file = open( stdPpath , 'wb' ) ; cpkl.dump( stdP , file , -1 ) ; file.close()
+

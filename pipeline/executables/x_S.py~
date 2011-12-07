@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+import os
+import sys
+import glob
+import AnisotropySearch as AS
+import numpy as np
+import cPickle as cpkl
+import optparse
+
+usage="""
+%prog TSDIR CSDDIR ORFDIR PSDDIR SPATH\n
+TSDIR --- path to directory containing the time-series (for normalisation purpose only)\n
+CSDDIR --- path to directory containing cross-spectra data or CSDs\n
+ORFDIR --- path to directory containing ORF multipole moments\n
+PSDDIR --- path to directory containing PSDs\n
+SPATH --- path to file to save the bias matrix in
+"""
+parser = optparse.OptionParser( usage = usage )
+
+parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' , nargs=1 ,
+                   help='Days to sum over' )
+
+parser.add_option( '--GWslope' , action='store' , dest='GWslope' , type='int' , nargs=1 , default=0 ,
+                   help='GW spectral slope' )
+
+parser.add_option( '--flow' , action='store' , dest='flow' , type='float' , default=1e-4 , nargs=1 ,
+                   help='Lower limit of freqeuncy range for maximum likelihood estimator of X' )
+
+parser.add_option( '--fhigh' , action='store' , dest='fhigh' , type='float' , default=1e-1 , nargs=1 ,
+                   help='Higher limit of frequency range for maximum likelihood estimator of X' )
+
+parser.add_option( '--lmax' , action='store' , dest='lmax' , type='int' , default=20 , nargs=1 ,
+                   help='Maximum l to take into account in estimating X' )
+
+( options , args ) = parser.parse_args()
+
+if len( args ) < 5 :
+    parser.error( "You must specify TSDIR, CSDDIR , ORFDIR, PSDDIR and SPATH! Type './s_S.py -h'" )
+else :
+    tsdir , csddir , orfdir , psddir , Spath = args[ :5 ]
+
+firstavailable , days_skipped = True , []
+for day in options.days :
+    print '~~~~~~~~~~ Day %d ~~~~~' % day
+
+    csdpath = csddir + '/d%03d.pkl' % day
+    orfpath = orfdir + '/orf_d%03d.pkl' % day
+    psdpath = psddir + '/d%03d.pkl' % day
+
+    orf = AS.OrfMultipleMoments( orfpath )
+    file = open( csdpath , 'rb' ) ; csddict = cpkl.load( file ) ; file.close()
+    file = open( psdpath , 'rb' ) ; psddict = cpkl.load( file ) ; file.close()
+    
+    if firstavailable :
+        Sdata = AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict , options.GWslope , day , options.flow , options.fhigh , options.lmax )
+        print 'Calculating normalisation factor due to coarsegraining and windowing with a Hanning window for both time-series...'
+        tspath = tsdir + '/d%03d.pkl' % day
+        file = open( tspath , 'rb' ) ; tsdict = cpkl.load( file ) ; file.close() ; ts = AS.TimeSeries( tsdict )
+        N = ts.t.data.shape[0] ; window = np.hanning( N ) ; T = ts.t.Cadence1 * N
+        fcoarse = AS.coarsefrequency( orf.f , psddict['f'] , csddict['f'] ) ; df = fcoarse.Cadence1
+        norm = ( np.sum( window**2 ) / N ) / ( np.sum( window**4 ) / N ) * T*df        
+        firstavailable = False
+    else :
+        Sdata += AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict , options.GWslope , day , options.flow , options.fhigh , options.lmax )
+
+Sdata *= norm
+S = AS.Coarsable( Sdata )
+Sdict = { 'S':S , 'ntrunc':options.lmax }
+
+Sdir = os.path.dirname( Spath )
+if Sdir not in glob.glob( Sdir ) :
+    os.system( 'mkdir -p %s' % Sdir )
+file = open( Spath , 'wb' ) ; cpkl.dump( Sdict , file , -1 ) ; file.close()
+
+days_skippedpath = Sdir + '/days_skipped.pkl'
+file = open( days_skippedpath , 'wb' ) ; cpkl.dump( days_skipped , file , -1 ) ; file.close()
+print 'done'
+
+

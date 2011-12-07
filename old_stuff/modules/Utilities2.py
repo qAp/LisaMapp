@@ -1,0 +1,739 @@
+
+import synthlisa
+import lisaxml
+import numpy
+import LISAresponse
+import pylab
+import sys
+import glob
+import os
+import re
+
+
+def sumTerms(x,jlow,jhigh):
+    Ny = len(jlow)
+    y = numpy.zeros(Ny,complex)
+    for k in range(Ny):
+        y[k] = sum(x[jlow[k]:jhigh[k]])
+    return y
+
+
+class TimeSeries(object):
+    def __init__(self,xmlfilepath):
+        inxml = lisaxml.readXML(xmlfilepath)
+        tdiobs = inxml.TDIData[0]
+        self.t = tdiobs.t
+        self.A, self.E, self.T = tdiobs.A, tdiobs.E, tdiobs.T
+        self.TimeOffset = tdiobs.TimeSeries.TimeOffset
+        self.Cadence = tdiobs.TimeSeries.Cadence
+        self.Length = tdiobs.TimeSeries.Length
+        print 'Time-series file read successfully!'
+        return
+
+    def windowAndFFT(self,window,fftlength):
+        if ( self.Length != len(window)  ):
+            raise Exception, 'size mismatch, length of data != that of window'
+        if ( fftlength < self.Length  ):
+            raise ValueError, 'fftlength < length of data'
+        z = numpy.zeros(fftlength - self.Length)
+        Abar = pylab.fft( numpy.array( list(self.A*window) + list(z) ) )
+        Ebar = pylab.fft( numpy.array( list(self.E*window) + list(z) ) )
+        Tbar = pylab.fft( numpy.array( list(self.T*window) + list(z) ) )
+        Abar = Abar[ 0:numpy.floor( fftlength/2+1 ) ]*self.Cadence
+        Ebar = Ebar[ 0:numpy.floor( fftlength/2+1 ) ]*self.Cadence
+        Tbar = Tbar[ 0:numpy.floor( fftlength/2+1 ) ]*self.Cadence
+        self.winfftA = Abar
+        self.winfftE = Ebar
+        self.winfftT = Tbar
+        self.FreqOffset = 0
+        self.FreqCadence = 1./(self.Cadence*fftlength)
+        self.FreqLength = len(Abar)
+        return 
+
+    def CrossSpectraDataAE(self):
+        if not ( hasattr(self,'winfftA') and hasattr(self,'winfftE') ):
+            print "\n No 'winfftA' and 'winfftE' available. Calculating them using a hanning window and fft the same length as the data...",
+            window = pylab.hanning(self.Length)
+            self.windowAndFFT(window,self.Length)
+        print 'done'
+        dataduration = self.Cadence*self.Length
+        CAE = numpy.conj(self.winfftA)*self.winfftE*2/dataduration
+        self.CAE = CAE
+        return CAE
+
+    def coarsegrain(self,flowy,deltafy,Ny):
+        if not hasattr(self,'CAE'):
+            self.CrossSpectraDataAE()
+        Nx = self.FreqLength
+        flowx = self.FreqOffset
+        deltafx = self.FreqCadence
+        if ( (deltafx <= 0) | (deltafy <= 0) | (Ny <= 0) ):
+            raise ValueError, 'bad input argument'
+        if ( deltafy < deltafx ):
+            raise ValueError, 'deltaf coarse-grain < deltaf fine-grain'
+        if ( (flowy - 0.5*deltafy) < (flowx - 0.5*deltafx) ):
+            raise ValueError, 'desired coarse-grained start frequency is too low'
+        fhighx = flowx + (Nx-1)*deltafx
+        fhighy = flowy + (Ny-1)*deltafy
+        if ( (fhighy + 0.5*deltafy) > (fhighx + 0.5*deltafx) ):
+            raise ValueError, 'desired coarse-grained stop frequency is too high'
+        i = numpy.arange(Ny)
+        jlow = numpy.intp(
+            1 + numpy.floor((flowy + (i-0.5)*deltafy - flowx - 0.5*deltafx)/deltafx))
+        jhigh = numpy.intp(
+            1 + numpy.floor((flowy + (i+0.5)*deltafy - flowx - 0.5*deltafx)/deltafx))
+        index1 = jlow[0]
+        index2 = jhigh[-1]
+        fraclow = (flowx + (jlow+0.5)*deltafx - flowy - (i-0.5)*deltafy)/deltafx
+        frachigh = (flowy + (i+0.5)*deltafy - flowx - (jhigh-0.5)*deltafx)/deltafx
+        frac1 = fraclow[0]
+        frac2 = frachigh[-1]
+        jtemp = jlow + 1
+        midsum = sumTerms(self.CAE, jtemp, jhigh)
+        ya = (deltafx/deltafy)*(self.CAE[jlow[:-1]]*fraclow[:-1] + 
+                                self.CAE[jhigh[:-1]]*frachigh[:-1] + 
+                                midsum[:-1])
+        if (jhigh[-1] > Nx-1):
+            yb = (deltafx/deltafy)*(self.CAE[jlow[-1]]*fraclow[-1] + midsum[-1])
+        else:
+            yb = (deltafx/deltafy)*(self.CAE[jlow[-1]]*fraclow[-1] + 
+                                    self.CAE[jhigh[-1]]*frachigh[-1] +
+                                    midsum[-1])
+        self.coarseCAE = numpy.array( list(ya) + [yb] )
+        self.coarseFreqOffset = flowy
+        self.coarseFreqCadence = deltafy
+        self.coarseFreqLength = len(self.coarseCAE)
+        self.index1 = index1
+        self.index2 = index2
+        self.frac1 = frac1
+        self.frac2 = frac2
+        return self.coarseCAE
+
+
+class AutoSpectrum(object):
+    def __init__(self,xmlfilepath):
+        inxml = lisaxml.readXML(xmlfilepath)
+        pobs = inxml.TDIData[0]
+        self.f = pobs.f
+        self.pAA, self.pEE, self.pTT = pobs.pAA, pobs.pEE, pobs.pTT
+        self.FreqOffset = pobs.TimeSeries.TimeOffset
+        self.Cadence = pobs.TimeSeries.Cadence
+        self.Length = pobs.TimeSeries.Length
+        print 'Auto-spectra file read sucessfully!'
+        return
+
+
+class OrfMultipleMoments(object):
+    def __init__(self,realrpath,realipath,imagrpath,imagipath,
+                 FreqOffset,Cadence):
+        realr = pylab.load(realrpath)
+        reali = pylab.load(realipath)
+        imagr = pylab.load(imagrpath)
+        imagi = pylab.load(imagipath)
+        try:
+            assert numpy.shape(realr)==numpy.shape(reali)==numpy.shape(imagr)==numpy.shape(imagi)
+            self.realr = realr
+            self.reali = reali
+            self.imagr = imagr
+            self.imagi = imagi
+        except AssertionError:
+            print 'The four arrays loaded need to have the same dimensions.'
+        self.FreqOffset = FreqOffset
+        self.Cadence = Cadence
+        self.Length = numpy.shape(self.realr)[1]
+        print 'Orf multiple moments files read successfully!'
+        return
+
+    def getntrunc(self):
+        ntrunc = int( -1.5 + numpy.sqrt( 8*numpy.shape(self.realr)[0] + 1 )/ 2 )
+        self.ntrunc = ntrunc
+        return ntrunc    
+
+    def getMultipleMoments(self,msign='pn'):
+        if not hasattr(self,'ntrunc'):
+            self.getntrunc()
+        try:
+            assert msign=='p' or msign=='pn'
+        except AssertionError:
+            print "Keyword parameter 'msign' must either be 'p' for only positive m's or 'pn' for all m's."
+        numf = self.Length
+        
+        sqrt2pi = numpy.sqrt( 2*numpy.pi )
+
+        if (msign == 'p'):
+            indxp = LISAresponse.getMLvec(self.ntrunc,'p')
+            p = self.realr - 1j*self.reali # + 1j*self.reali
+            q = self.imagr - 1j*self.imagi # + 1j*self.imagi
+            g = numpy.zeros( ( len(indxp),numf ) , complex )
+            for i,ml in enumerate( indxp ):
+                g[i] = (-1)**ml[0] * sqrt2pi * ( p[i] + 1j*q[i] )
+            self.indxp = indxp
+            self.Moments_pm = g
+        else:
+            indxp  = LISAresponse.getMLvec(self.ntrunc,'p')
+            indxpn = LISAresponse.getMLvec(self.ntrunc,'pn')
+            p = self.realr - 1j*self.reali # + 1j*self.reali
+            q = self.imagr - 1j*self.imagi # + 1j*self.imagi
+            g = numpy.zeros( ( len(indxpn),numf ) ,complex)
+            for i,ml in enumerate(indxpn):
+                m = ml[0]
+                l = ml[1]
+                if m >= 0:
+                    k = indxp.index(ml)
+                    g[i,:] = (-1)**m * sqrt2pi * ( p[k,:] + 1j*q[k,:] )
+                else:
+                    ml = (-m,l)
+                    k = indxp.index(ml)
+                    g[i,:] = sqrt2pi * ( numpy.conj(p[k,:]) + 1j*numpy.conj(q[k,:]) )
+            self.indxpn = indxpn        
+            self.Moments = g
+        return g
+
+    def coarsegrain(self,flowy,deltafy,Ny):
+        if not hasattr(self,'Moments'):
+            self.getMultipleMoments(msign='pn')
+        Nx = self.Length
+        flowx = self.FreqOffset
+        deltafx = self.Cadence
+        if ( (deltafx <= 0) | (deltafy <= 0) | (Ny <= 0) ):
+            raise ValueError, 'bad input argument'
+        if ( deltafy < deltafx ):
+            raise ValueError, 'deltaf coarse-grain < deltaf fine-grain'
+        if ( (flowy - 0.5*deltafy) < (flowx - 0.5*deltafx) ):
+            raise ValueError, 'desired coarse-grained start frequency is too low'
+        fhighx = flowx + (Nx-1)*deltafx
+        fhighy = flowy + (Ny-1)*deltafy
+        if ( (fhighy + 0.5*deltafy) > (fhighx + 0.5*deltafx) ):
+            raise ValueError, 'desired coarse-rained stop frequency is too high'
+        i = numpy.arange(Ny)
+        jlow = numpy.intp(
+            1 + numpy.floor((flowy + (i-0.5)*deltafy - flowx - 0.5*deltafx)/deltafx))
+        jhigh = numpy.intp(
+            1 + numpy.floor((flowy + (i+0.5)*deltafy - flowx - 0.5*deltafx)/deltafx))
+        index1 = jlow[0]
+        index2 = jhigh[-1]
+        fraclow = (flowx + (jlow+0.5)*deltafx - flowy - (i-0.5)*deltafy)/deltafx
+        frachigh = (flowy + (i+0.5)*deltafy - flowx - (jhigh-0.5)*deltafx)/deltafx
+        frac1 = fraclow[0]
+        frac2 = frachigh[-1]
+        jtemp = jlow + 1
+        coarseMoments = numpy.zeros( (numpy.shape(self.Moments)[0],Ny) , complex)
+        for lm in range(numpy.shape(self.Moments)[0]):
+            midsum = sumTerms(self.Moments[lm,:], jtemp, jhigh)
+            ya = (deltafx/deltafy)*(self.Moments[lm,:][jlow[:-1]]*fraclow[:-1] +
+                                    self.Moments[lm,:][jhigh[:-1]]*frachigh[:-1] +
+                                    midsum[:-1])
+            if (jhigh[-1] > Nx-1):
+                yb = (deltafx/deltafy)*(self.Moments[lm,:][jlow[-1]]*fraclow[-1] + midsum[-1])
+            else:
+                yb = (deltafx/deltafy)*(self.Moments[lm,:][jlow[-1]]*fraclow[-1] +
+                                        self.Moments[lm,:][jhigh[-1]]*frachigh[-1] +
+                                        midsum[-1])
+            coarseMoments[lm,:] = numpy.array( list(ya) + [yb] )
+        self.coarseMoments = coarseMoments
+        self.coarseFreqOffset = flowy
+        self.coarseCadence = deltafy
+        self.coarseLength = numpy.shape(self.coarseMoments)[1]
+        self.index1 = index1
+        self.index2 = index2
+        self.frac1 = frac1
+        self.frac2 = frac2
+        return coarseMoments
+
+
+class OptimalFilter(object):
+    def __init__(self,OrfMultipleMoments,AutoSpectrum,GwSpectralSlope=-3):
+        self.orf = OrfMultipleMoments
+        self.psd = AutoSpectrum
+        self.alpha = GwSpectralSlope
+        return
+    def getCoarseFreqs(self):
+        forf = self.orf.FreqOffset + self.orf.Cadence*numpy.arange(self.orf.Length)
+        fpsd = self.psd.FreqOffset + self.psd.Cadence*numpy.arange(self.psd.Length)
+        nlow  = int( ((forf[0]-self.orf.Cadence/2)  - (fpsd[0]-self.psd.Cadence/2)) / self.psd.Cadence ) + 1
+        nhigh = int( ((forf[-1]+self.orf.Cadence/2) - (fpsd[0]+self.psd.Cadence/2)) / self.psd.Cadence )
+        self.FreqOffset = fpsd[nlow]
+        self.Cadence    = self.psd.Cadence
+        self.Length     = nhigh - nlow + 1
+        self.nlow = nlow
+        self.nhigh = nhigh
+        fcoarse = self.FreqOffset + self.Cadence*numpy.arange(self.Length)
+        self.CoarseFreqs = fcoarse
+        return fcoarse
+    def getFilter(self,flow=1.4e-4,fhigh=1e-1):
+        if not ( hasattr(self,'FreqOffset') and hasattr(self,'Cadence') and hasattr(self,'Length') ):
+            self.getCoarseFreqs()
+        if ( fhigh < flow ):
+            raise Exception, 'fhigh must be >= flow'
+        elif ( flow < self.CoarseFreqs[0] ):
+            raise Exception, 'flow must be >= %f' % self.CoarseFreqs[0]
+        elif ( fhigh > self.CoarseFreqs[-1] ):
+            raise Exception, 'fhigh must be <= %f' % self.CoarseFreqs[-1]
+        ilow  = numpy.round( (flow - self.CoarseFreqs[0])  / self.Cadence )
+        ihigh = numpy.round( (fhigh - self.CoarseFreqs[0]) / self.Cadence )
+        orfmoments = self.orf.coarsegrain(self.FreqOffset,self.Cadence,self.Length)
+        pAA = self.psd.pAA[self.nlow:self.nhigh+1]
+        pEE = self.psd.pEE[self.nlow:self.nhigh+1]
+        H = self.CoarseFreqs**self.alpha
+        zeone = numpy.ones(numpy.shape(orfmoments),complex)
+        Filter = zeone*pAA #numpy.conj(orfmoments)*H/pAA/pEE #zeone/pAA#/pEE
+        self.Filter = Filter[ : , ilow : ihigh+1 ]
+        self.fFilter = self.CoarseFreqs[ ilow : ihigh+1 ]
+        return self.fFilter , self.Filter
+
+
+class XXX(object):
+    def __init__(self,OrfMultipleMoments,AutoSpectrum,TimeSeries,GwSpectralSlope):
+        self.orf = OrfMultipleMoments
+        self.psd = AutoSpectrum
+        self.ts = TimeSeries
+        self.alpha = GwSpectralSlope
+        return
+    def getCoarseFreqs(self):
+        """
+        Note it might be tempting to create a super class with this method for OptimalFilter, XXX and GGG to inherit. However, this method might need to be changed in a way which will make it different for the three classes.  
+        """
+        forf = self.orf.FreqOffset + self.orf.Cadence*numpy.arange(self.orf.Length)
+        fpsd = self.psd.FreqOffset + self.psd.Cadence*numpy.arange(self.psd.Length)
+        nlow  = numpy.ceil( ((forf[0]-self.orf.Cadence/2)  - (fpsd[0]-self.psd.Cadence/2)) / self.psd.Cadence ) 
+        nhigh = numpy.floor( ((forf[-1]+self.orf.Cadence/2) - (fpsd[0]+self.psd.Cadence/2)) / self.psd.Cadence )
+        self.FreqOffset = fpsd[nlow]
+        self.Cadence    = self.psd.Cadence
+        self.Length     = nhigh - nlow + 1
+        self.nlow = nlow
+        self.nhigh = nhigh
+        fcoarse = self.FreqOffset + self.Cadence*numpy.arange(self.Length)
+        self.CoarseFreqs = fcoarse
+        return fcoarse
+    def getintegrand(self,flow=1.4e-4,fhigh=1e-1):
+        print 'Calculating XXX...'
+        if not ( hasattr(self,'FreqOffset') and hasattr(self,'Cadence') and hasattr(self,'Length') ):
+            self.getCoarseFreqs()
+        if ( fhigh < flow ):
+            raise Exception, 'fhigh must be >= flow'
+        elif ( flow < self.CoarseFreqs[0] ):
+            raise Exception, 'flow must be >= %f' % self.CoarseFreqs[0]
+        elif ( fhigh > self.CoarseFreqs[-1] ):
+            raise Exception, 'fhigh must be <= %f' % self.CoarseFreqs[-1]
+        ilow  = numpy.round( (flow - self.CoarseFreqs[0])  / self.Cadence )
+        ihigh = numpy.round( (fhigh - self.CoarseFreqs[0]) / self.Cadence )
+        orfmoments = self.orf.coarsegrain(self.FreqOffset,self.Cadence,self.Length)
+        pAA = self.psd.pAA[self.nlow:self.nhigh+1]
+        pEE = self.psd.pEE[self.nlow:self.nhigh+1]
+        H = self.CoarseFreqs**self.alpha
+        CAE = self.ts.coarsegrain(self.FreqOffset,self.Cadence,self.Length)
+        integrand = numpy.conj(orfmoments)*H / pAA / pEE * CAE
+        self.integrand = integrand
+        return self.CoarseFreqs[ ilow : ihigh+1 ] , self.integrand[ : , ilow : ihigh+1 ]
+    def getsummand(self,flow=1.4e-4,fhigh=1e-1):
+        print 'Calculating XX...',
+        f, integrand = self.getintegrand(flow,fhigh)
+        summand = numpy.sum(integrand,1)
+        self.summand = summand
+        print 'done'
+        return  summand
+
+class GGG(object):
+    def __init__(self,OrfMultipleMoments,AutoSpectrum,GwSpectralSlope):
+        self.orf = OrfMultipleMoments
+        self.psd = AutoSpectrum
+        self.alpha = GwSpectralSlope
+        return
+    def getCoarseFreqs(self):
+        forf = self.orf.FreqOffset + self.orf.Cadence*numpy.arange(self.orf.Length)
+        fpsd = self.psd.FreqOffset + self.psd.Cadence*numpy.arange(self.psd.Length)
+        nlow  = int( ((forf[0]-self.orf.Cadence/2)  - (fpsd[0]-self.psd.Cadence/2)) / self.psd.Cadence ) + 1
+        nhigh = int( ((forf[-1]+self.orf.Cadence/2) - (fpsd[0]+self.psd.Cadence/2)) / self.psd.Cadence )
+        self.FreqOffset = fpsd[nlow]
+        self.Cadence    = self.psd.Cadence
+        self.Length     = nhigh - nlow + 1
+        self.nlow = nlow
+        self.nhigh = nhigh
+        fcoarse = self.FreqOffset + self.Cadence*numpy.arange(self.Length)
+        self.CoarseFreqs = fcoarse
+        return fcoarse
+    def getintegrand(self,flow=1.4e-4,fhigh=1e-1):
+        print 'Calculating GGG, this takes a long long time...'
+        if not ( hasattr(self,'FreqOffset') and hasattr(self,'Cadence') and hasattr(self,'Length') ):
+            self.getCoarseFreqs()
+        if ( fhigh < flow ):
+            raise Exception, 'fhigh must be >= flow'
+        elif ( flow < self.CoarseFreqs[0] ):
+            raise Exception, 'flow must be >= %f' % self.CoarseFreqs[0]
+        elif ( fhigh > self.CoarseFreqs[-1] ):
+            raise Exception, 'fhigh must be <= %f' % self.CoarseFreqs[-1]
+        ilow  = numpy.round( (flow - self.CoarseFreqs[0])  / self.Cadence )
+        ihigh = numpy.round( (fhigh - self.CoarseFreqs[0]) / self.Cadence )
+        orfmoments = self.orf.coarsegrain(self.FreqOffset,self.Cadence,self.Length)
+        pAA = self.psd.pAA[self.nlow:self.nhigh+1]
+        pEE = self.psd.pEE[self.nlow:self.nhigh+1]
+        H = self.CoarseFreqs**self.alpha
+        part1 = numpy.conj(orfmoments) * H**2 / pAA / pEE
+        part2 = orfmoments
+        numlm,numf = numpy.shape(part1)
+        integrand = numpy.zeros((numlm,numlm,numf),complex)
+        for i in range(numlm):
+            print 'Doing %d' % i
+            for j in range(numlm):
+                integrand[i,j,:] = part1[i,:]*part2[j,:]
+        self.integrand = integrand
+        return self.CoarseFreqs[ ilow : ihigh+1 ] , self.integrand[ :,: , ilow:ihigh+1 ]
+    def getsummand(self,flow=1.4e-4,fhigh=1e-1):
+        print 'Calculating GG...',
+        if not ( hasattr(self,'FreqOffset') and hasattr(self,'Cadence') and hasattr(self,'Length') ):
+            self.getCoarseFreqs()
+        if ( fhigh < flow ):
+            raise Exception, 'fhigh must be >= flow'
+        elif ( flow < self.CoarseFreqs[0] ):
+            raise Exception, 'flow must be >= %f' % self.CoarseFreqs[0]
+        elif ( fhigh > self.CoarseFreqs[-1] ):
+            raise Exception, 'fhigh must be <= %f' % self.CoarseFreqs[-1]
+        ilow  = numpy.round( (flow - self.CoarseFreqs[0])  / self.Cadence )
+        ihigh = numpy.round( (fhigh - self.CoarseFreqs[0]) / self.Cadence )
+        orfmoments = self.orf.coarsegrain(self.FreqOffset,self.Cadence,self.Length)
+        pAA = self.psd.pAA[self.nlow:self.nhigh+1]
+        pEE = self.psd.pEE[self.nlow:self.nhigh+1]
+        H = self.CoarseFreqs**self.alpha
+        nlm = numpy.shape(orfmoments)[0]
+        part = numpy.conj(orfmoments) * H**2 / pAA / pEE
+        summand = numpy.zeros((nlm,nlm),complex)
+        for i in range(nlm):
+            for j in range(nlm):
+                summand[i,j] = numpy.sum(part[i,ilow:ihigh+1]*orfmoments[j,ilow:ihigh+1])
+        self.summand = summand
+        print 'done'
+        return summand
+
+
+def findTSfiles(sourcename,tsdir,day):
+    tsfileprefix = sourcename + '_obs-s%03d' % day
+    tsxmlname = tsfileprefix + '.xml'
+    tsbinname = tsfileprefix + '-0.bin'
+    workdir = os.getcwd()
+    os.chdir(tsdir)
+    for name in [tsxmlname,tsbinname]:
+        if name in glob.glob(tsfileprefix + '*'):
+            available = True
+        else:
+            available = False
+            print ( name + ' not found in ' + os.getcwd() )
+            xmlpath = []
+            break
+    else:
+        xmlpath = [tsdir + tsxmlname]
+    os.chdir(workdir)
+    return available, xmlpath
+
+def findPSDfiles(sourcename,psddir,day):
+    psdfileprefix = sourcename + '_obs-s%03d-psd' % day
+    psdxmlname = psdfileprefix + '.xml'
+    psdbinname = psdfileprefix + '-0.bin'
+    workdir = os.getcwd()
+    os.chdir(psddir)
+    for name in [psdxmlname,psdbinname]:
+        if name in glob.glob(psdfileprefix + '*'):
+            available = True
+        else:
+            available = False
+            print ( name + ' not found in ' + os.getcwd() )
+            xmlpath = []
+            break
+    else:
+        xmlpath = [psddir + psdxmlname]
+    os.chdir(workdir)
+    return available, xmlpath
+
+def findORFfiles(orfdir,day):
+    orffileprefix = 'd%03d' % day
+    orfrealrname = orffileprefix + 'realr.txt'
+    orfrealiname = orffileprefix + 'reali.txt'
+    orfimagrname = orffileprefix + 'imagr.txt'
+    orfimaginame = orffileprefix + 'imagi.txt'
+    workdir = os.getcwd()
+    os.chdir(orfdir)
+    for name in [orfrealrname,orfrealiname,orfimagrname,orfimaginame]:
+        if name in glob.glob(orffileprefix + '*'):
+            available = True
+        else:
+            available = False
+            print ( name + ' not found in ' + os.getcwd() )
+            txtpath = []
+            break
+    else:
+        txtpath = [orfdir + orfrealrname, orfdir + orfrealiname,
+                   orfdir + orfimagrname, orfdir + orfimaginame]
+    os.chdir(workdir)
+    return available, txtpath
+
+
+def tsXML_to_psdXML(inxmlpath,outxmldir):
+    """
+    Not too nice function for  opening a TDIsignal xml file, reading the time-series' inside, calculate the PSDs for each, and then saving them in a similar xml file, but with the PSDs saved as lisaxml's TimeSeries objects.  Will have to do for now.                                                                                                                               """
+    inxml = lisaxml.readXML(inxmlpath)
+    sources = inxml.SourceData
+    lisa = inxml.LISAData
+    tdiobs = inxml.TDIData[0]
+    inxml.close()
+
+    segduration = 2*60.0**2
+    patches = int(tdiobs.TimeSeries.Duration/segduration)
+    specAA = synthlisa.spect(tdiobs.A,tdiobs.TimeSeries.Cadence,patches)
+    specEE = synthlisa.spect(tdiobs.E,tdiobs.TimeSeries.Cadence,patches)
+    specTT = synthlisa.spect(tdiobs.T,tdiobs.TimeSeries.Cadence,patches)
+    f = specAA[:,0]
+    pAA = specAA[:,1]
+    pEE = specEE[:,1]
+    pTT = specTT[:,1]
+
+    pobs = lisaxml.Observable('f,pAA,pEE,pTT',DataType = 'FractionalFrequency')
+    pobs.TimeSeries = lisaxml.TimeSeries([f,pAA,pEE,pTT],'f,pAA,pEE,pTT')
+    pobs.TimeSeries.Cadence = f[1] - f[0]
+    pobs.TimeSeries.Cadence_Unit = 'Hertz'
+    pobs.TimeSeries.TimeOffset = 0
+    pobs.TimeSeries.TimeOffset_Unit = 'Hertz'
+
+    inxmlname = os.path.basename(inxmlpath)
+    outxmlpath = outxmldir + re.sub('\.xml$','',inxmlname) + '-psd.xml'
+    outxml = lisaxml.lisaXML(outxmlpath,author='J.Yu')
+    outxml.TDIData(pobs)
+    outxml.LISAData(lisa)
+    for source in sources:
+        outxml.SourceData(source)
+    outxml.close()
+    return
+
+
+def avg_psdXML_avg(day,psdlxmlpath,psdrxmlpath,psddir):
+    xmll = lisaxml.readXML(psdlxmlpath)
+    xmlr = lisaxml.readXML(psdrxmlpath)
+
+    sources = xmll.SourceData
+    lisa   = xmll.LISAData
+
+    pobsl = xmll.TDIData[0]
+    pobsr = xmlr.TDIData[0]
+
+    xmll.close()
+    xmlr.close()
+
+    pAAl, pEEl, pTTl = pobsl.pAA, pobsl.pEE, pobsl.pTT
+    pAAr, pEEr, pTTr = pobsr.pAA, pobsr.pEE, pobsr.pTT
+
+    f = pobsl.f
+    pAA, pEE, pTT = (pAAl + pAAr)/2, (pEEl + pEEr)/2, (pTTl + pTTr)/2
+    
+    pobs = lisaxml.Observable('f,pAA,pEE,pTT', DataType = 'FractionalFrequency')
+    pobs.TimeSeries = lisaxml.TimeSeries([f,pAA,pEE,pTT],'f,pAA,pEE,pTT')
+    pobs.TimeSeries.Cadence = pobsl.TimeSeries.Cadence
+    pobs.TimeSeries.Cadence_Unit = pobsl.TimeSeries.Cadence_Unit
+    pobs.TimeSeries.TimeOffset = pobsl.TimeSeries.TimeOffset
+    pobs.TimeSeries.TimeOffset_Unit = pobsl.TimeSeries.TimeOffset_Unit
+
+    psdlxmlname = os.path.basename(psdlxmlpath)
+    psdxmlname = re.split('-',psdlxmlname,1)[0] + '-s%03d-psd.xml' % day
+    psdxmlpath = psddir + psdxmlname
+    psdxml = lisaxml.lisaXML(psdxmlpath,author='J.Yu')
+    psdxml.TDIData(pobs)
+    psdxml.LISAData(lisa)
+    for source in sources:
+        psdxml.SourceData(source)
+    psdxml.close()
+    return
+
+from mpl_toolkits.basemap import Basemap,addcyclic
+class SkyMap(object):
+    def __init__(self,xlmrpath,xlmipath,maptype):
+        xlmr = pylab.load(xlmrpath)
+        xlmi = pylab.load(xlmipath)
+        xlmrname = os.path.basename(xlmrpath)
+        self.outfileprefix = '-'.join( re.split( '-' , xlmrname )[:-1] )
+        try:
+            assert numpy.shape(xlmr) == numpy.shape(xlmi)
+            self.xlmr , self.xlmi = xlmr , xlmi
+        except AssertionError:
+            print 'The two arrays loaded must have the same dimensions.'
+        self.xlm = self.xlmr + 1j*self.xlmi
+        print 'Multiple moments files read successfully!'
+        ntrunc = int( numpy.sqrt( numpy.shape(self.xlm)[0] ) - 1 )
+        self.ntrunc = ntrunc
+        self.gotpix = False
+        self.maptype = maptype
+#        print 'Applying quick-fix I to multiple moments...'
+#        indxpn = LISAresponse.getMLvec( self.ntrunc , 'pn' )
+#        xlm = numpy.zeros( numpy.shape(self.xlm) , dtype=complex )
+#        for i,ml in enumerate(indxpn):
+#            m , l = ml[0] , ml[1]
+#            k = indxpn.index( ( -m,l ) )
+#            xlm[i] = (-1)**m*self.xlm[k]
+#        self.xlm = xlm    
+        return
+    def getMultipleMoments(self,msign='pn'):
+        try:
+            assert msign=='p' or msign=='pn'
+        except AssertionError:
+            print "Keyword parameter 'msign' must either be 'p' for only positive m's or 'pn' for all m's."
+        if ( msign == 'p' ):
+            indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+            xlm = self.xlm[:len(indxp)]
+        else:
+            xlm = self.xlm
+        return xlm
+    def getRealMultipleMoments(self,msign='pn'):
+        try:
+            assert msign=='p' or msign=='pn'
+        except AssertionError:
+            print "Keyword parameter 'msign' must either be 'p' for only positive m's or 'pn' for all m's."
+        indxpn = LISAresponse.getMLvec( self.ntrunc , 'pn' )
+        plm = numpy.zeros( numpy.shape(self.xlm) , complex )
+        for i,ml in enumerate(indxpn):
+            m = ml[0]
+            l = ml[1]
+            k = indxpn.index((-m,l))
+            plm[i] = ( self.xlm[i] + (-1)**m*numpy.conj(self.xlm[k]) ) / 2
+        if ( msign=='p' ):
+            indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+            plm = plm[:len(indxp)]
+        else:
+            plm = plm
+        return plm
+    def getImagMultipleMoments(self,msign='pn'):
+        try:
+            assert msign=='p' or msign=='pn'
+        except AssertionError:
+            print "Keyword parameter 'msign' must either be 'p' for only positive m's or 'pn' for all m's."
+        indxpn = LISAresponse.getMLvec( self.ntrunc , 'pn' )
+        qlm = numpy.zeros( numpy.shape(self.xlm) , dtype = complex )
+        for i,ml in enumerate(indxpn):
+            m = ml[0]
+            l = ml[1]
+            k = indxpn.index((-m,l))
+            qlm[i] = ( self.xlm[i] - (-1)**m*numpy.conj(self.xlm[k]) ) / 2j
+        if ( msign=='p' ):
+            indxp = LISAresponse.getMLvec( self.ntrunc , 'p' )
+            qlm = qlm[:len(indxp)]
+        else:
+            qlm = qlm
+        return qlm
+    def getPixels(self):
+        nlat = self.ntrunc + 30
+        nlon = 2*(nlat - 1)
+        self.sky  = LISAresponse.mySpharmt(nlon,nlat)
+        if self.maptype in ['X','XX']:
+            norm = 1e-45
+        elif self.maptype in ['P']:
+            norm = 1
+        xlm  = self.getMultipleMoments('p')      * norm
+        plm  = self.getRealMultipleMoments('p')  * norm
+        qlm  = self.getImagMultipleMoments('p')  * norm
+        self.pix  = self.sky.spectogrd(xlm)
+        self.pixp = self.sky.spectogrd(plm)
+        self.pixq = self.sky.spectogrd(qlm)
+        self.gotpix = True
+        return self.pix, self.pixp, self.pixq
+    def plotMap(self,figdir=''):
+        if not self.gotpix:
+            self.getPixels()
+        lats = self.sky.lats
+        lons = self.sky.lons
+        pixpw , lonsw = addcyclic( self.pixp , lons )
+        pixqw , lonsw = addcyclic( self.pixq , lons )
+        meshlon, meshlat = pylab.meshgrid( lonsw , lats )
+        projection = Basemap(projection='moll',lon_0=180,resolution='c')
+        x , y = projection( meshlon , meshlat )
+        projection.contourf( x,y, pixpw , 30)
+        projection.drawmeridians(numpy.arange(0,360,30))
+        projection.drawparallels(numpy.arange(-90,90,30))
+        projection.drawmapboundary()
+        figname = self.outfileprefix + '-' + self.maptype + 'real.png'
+        pylab.savefig( ( figdir + figname ) )
+        projection.contourf( x,y, pixqw , 30)
+        projection.drawmeridians(numpy.arange(0,360,30))
+        projection.drawparallels(numpy.arange(-90,90,30))
+        projection.drawmapboundary()
+        figname = self.outfileprefix + '-' + self.maptype + 'imag.png'
+        pylab.savefig( ( figdir + figname ) )
+
+
+class FisherMatrix(object):
+    def __init__(self,fishrpath,fishipath,fishtype):
+        fishr , fishi = pylab.load(fishrpath) , pylab.load(fishipath)
+        try:
+            assert numpy.shape(fishr) == numpy.shape(fishi)
+            self.fish = fishr + 1j*fishi
+        except AssertionError:
+            print 'The two arrays loaded must have the same dimensions.'
+            raise
+        self.fishtype = fishtype
+        self.ntrunc = int( numpy.sqrt( numpy.shape(self.fish)[0] ) - 1 )
+        self.decomposed  = False
+        self.regularised = False
+        return
+    def svd(self):
+        self.U, self.s, self.Vh = pylab.svd(self.fish)
+        self.decomposed = True
+        return self.U , self.s , self.Vh
+    def regularise(self,regMethod=2,regCutoff=2./3):
+        if not self.decomposed :
+            self.svd()
+#        print regMethod
+        if regMethod in [ 1 , 11 ]:
+            ind = pylab.find( self.s/self.s[0] >= regCutoff )
+            if len(ind) > 0 :
+                ii = ind[-1]
+            else:
+                ii = 0
+#            print 'method 1/11'
+        elif regMethod in [ 2 , 12 ]:
+            ii = len(self.s)*regCutoff - 1
+#            print 'method 2/12'
+        elif regMethod in [ 3 , 13 ]:
+            ii = regCutoff - 1
+#            print 'method 3/13'
+        else:
+            print 'Unknown regularisation method.'
+        if ii < 1 :
+            ii = 0
+        if ii > len(self.s)-1 :
+            ii = -1
+        self.regs = numpy.zeros(self.s.shape,self.s.dtype)
+        if regMethod in [ 1 , 2 , 3 ]:
+            self.regs[:ii+1] , self.regs[ii+1:] = self.s[:ii+1] , self.s[ii]
+        elif regMethod in [ 11 , 12 , 13 ]:
+            self.regs[:ii+1] , self.regs[ii+1:] = self.s[:ii+1] , numpy.inf
+        else:
+            print 'Unknown regularisation method.'
+        self.regularised = True
+        return self.regs
+    def invert(self):
+        if not self.decomposed:
+            self.svd()
+        Sinv = numpy.diag( 1 / self.s )
+        Uh = numpy.transpose(numpy.conj(self.U))
+        V  = numpy.transpose(numpy.conj(self.Vh))
+        self.fishinv = numpy.dot(V,numpy.dot(Sinv,Uh))
+        return self.fishinv
+    def reginvert(self):
+        if not self.regularised : 
+            self.regularise()
+        Sinv = numpy.diag( 1 / self.regs )
+        Uh = numpy.transpose(numpy.conj(self.U))
+        V  = numpy.transpose(numpy.conj(self.Vh))
+        self.regfishinv = numpy.dot(V,numpy.dot(Sinv,Uh))
+        return self.regfishinv
+    def getpCovar(self):
+        if not self.regularised :
+            self.regularise()
+        Cov = numpy.diag( self.s / self.regs**2 )
+        Uh = numpy.transpose(numpy.conj(self.U))
+        V  = numpy.transpose(numpy.conj(self.Vh))
+        self.pCovar = numpy.dot(V,numpy.dot(Cov,Uh))
+        return self.pCovar
+
+def Deconvolve( skymap, fishermatrix, regMethod=2, regCutoff=2./3 ):
+    if not regMethod:
+        fishinv = fishermatrix.invert()
+    else:
+        fishermatrix.regularise(regMethod,regCutoff)
+        fishinv = fishermatrix.reginvert()
+    cleanmap = numpy.dot( fishinv , skymap.xlm )
+    return cleanmap
