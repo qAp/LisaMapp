@@ -67,9 +67,9 @@ for day in options.days :
         print 'Calculating normalisation factor due to coarsegraining and windowing with a Hanning window for both time-series...'
         tspath = tsdir + '/d%03d.pkl' % day
         file = open( tspath , 'rb' ) ; tsdict = cpkl.load( file ) ; file.close() ; ts = AS.TimeSeries( tsdict )
-        N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N ; window = np.ones( N ) #np.hanning( N ) 
+        N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N ; window = np.hanning( N )  #np.ones( N ) 
         fcoarse = AS.coarsefrequency( orf.f , psddict['f'] , csddict['f'] ) ; df = fcoarse.Cadence1
-        norm = ( np.sum( window**2 ) / N ) / ( np.sum( window**4 ) / N ) * T*df        
+        norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df        
         firstavailable = False
 
     SSdata *= norm
