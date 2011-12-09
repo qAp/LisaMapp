@@ -39,6 +39,8 @@ if len( args ) < 5 :
 else :
     tsdir , csddir , orfdir , psddir , Spath = args[ :5 ]
 
+Sdir = os.path.dirname( Spath )
+
 firstavailable , days_skipped = True , []
 for day in options.days :
     print '~~~~~~~~~~ Day %d ~~~~~' % day
@@ -58,23 +60,32 @@ for day in options.days :
     file = open( csdpath , 'rb' ) ; csddict = cpkl.load( file ) ; file.close()
     file = open( psdpath , 'rb' ) ; psddict = cpkl.load( file ) ; file.close()
     
+    SSdata = AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict , options.GWslope , day , options.flow , options.fhigh , options.lmax )
+    
     if firstavailable :
-        Sdata = AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict , options.GWslope , day , options.flow , options.fhigh , options.lmax )
+        Sdata = np.zeros( SSdata.shape , dtype = SSdata.dtype )
         print 'Calculating normalisation factor due to coarsegraining and windowing with a Hanning window for both time-series...'
         tspath = tsdir + '/d%03d.pkl' % day
         file = open( tspath , 'rb' ) ; tsdict = cpkl.load( file ) ; file.close() ; ts = AS.TimeSeries( tsdict )
-        N = ts.t.data.shape[0] ; window = np.hanning( N ) ; T = ts.t.Cadence1 * N
+        N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N ; window = np.ones( N ) #np.hanning( N ) 
         fcoarse = AS.coarsefrequency( orf.f , psddict['f'] , csddict['f'] ) ; df = fcoarse.Cadence1
         norm = ( np.sum( window**2 ) / N ) / ( np.sum( window**4 ) / N ) * T*df        
         firstavailable = False
-    else :
-        Sdata += AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict , options.GWslope , day , options.flow , options.fhigh , options.lmax )
 
-Sdata *= norm
+    SSdata *= norm
+    Sdata += SSdata
+
+    "~~Write S_day to disk for each day here"
+    SS = AS.Coarsable( SSdata ) ; SSdict = { 'S':SS , 'ntrunc':options.lmax }
+    if Sdir+'/../SS' not in glob.glob( Sdir+'/../SS' ) :
+        os.system( 'mkdir -p %s' % ( Sdir+'/../SS' ) )
+    file = open( Sdir+'/../SS/SS_d%03d.pkl' % day , 'wb' ) ; cpkl.dump( SSdict , file , -1 ) ; file.close()
+    "~~"
+
 S = AS.Coarsable( Sdata )
 Sdict = { 'S':S , 'ntrunc':options.lmax }
 
-Sdir = os.path.dirname( Spath )
+
 if Sdir not in glob.glob( Sdir ) :
     os.system( 'mkdir -p %s' % Sdir )
 file = open( Spath , 'wb' ) ; cpkl.dump( Sdict , file , -1 ) ; file.close()

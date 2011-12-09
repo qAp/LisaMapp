@@ -65,7 +65,8 @@ for day in options.days :
     if psdpath not in glob.glob( psdpath ) :
         print 'PSD not available on day %03d' % day ; days_skipped += [ day ] ; continue
     if orfpath not in glob.glob( orfpath ) :
-        print 'ORF not availalbe on day %03d' % day ; days_skipped += [ day ] ; continue
+        print 'ORF not found at %s' % orfpath ; days_skipped += [ day ] ; continue
+#        print 'ORF not availalbe on day %03d' % day ; days_skipped += [ day ] ; continue
 
     print "Time-series, psd and orf all available on day %03d. " % day
     print "First available day?"  , firstavailable
@@ -84,16 +85,24 @@ for day in options.days :
 
     if firstavailable :
         X = np.zeros( np.shape(XX.data) , complex )
+        print 'normalise for coarsegraining and windowing with a Hanning window for both time-series'
+        N = xxx.ts.t.data.shape[0] ; T = xxx.ts.t.Cadence1 * N ; df = xxx.fcoarse.Cadence1
+        window = np.hanning( N ) #np.ones( N ) 
+        norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df
         firstavailable = False
 
-    X += XX.data
+    dXdata = norm * XX.data
+    X += dXdata
 
-'normalise for coarsegraining and windowing with a Hanning window for both time-series'
-N = xxx.ts.t.data.shape[0] ; T = xxx.ts.t.Cadence1 * N ; df = xxx.fcoarse.Cadence1
-window = np.hanning( N )
-norm = ( np.sum( window**2 ) / N ) / ( np.sum( window**4 ) / N ) * T*df
+    "~~Write X_day to disk for each day here"
+    map_dX = AS.xlmSkyMap( xlm = dXdata )
+    if Xdir+'/../XX' not in glob.glob( Xdir+'/../XX' ) :
+        os.system( 'mkdir -p %s' % ( Xdir+'/../XX' ) )
+    file = open( Xdir+'/../XX/XX_d%03d.pkl' % day , 'wb' ) ; cpkl.dump( map_dX , file , -1 ) ; file.close()
+    "~~"
 
-map_X = AS.xlmSkyMap( xlm = norm * X )
+
+map_X = AS.xlmSkyMap( xlm = X )
 
 if Xdir not in glob.glob( Xdir ) :
     os.system( 'mkdir -p %s' % Xdir )

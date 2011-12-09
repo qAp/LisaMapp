@@ -75,7 +75,6 @@ for i , ml in enumerate( indxpn ) :
 
 stdP = np.sqrt( variance )
 
-
 if stdPdir not in glob.glob( stdPdir ) :
     os.system( 'mkdir %s' % stdPdir )
 file = open( stdPpath , 'wb' ) ; cpkl.dump( stdP , file , -1 ) ; file.close()

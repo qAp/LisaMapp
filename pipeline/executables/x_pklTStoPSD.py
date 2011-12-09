@@ -40,7 +40,7 @@ for day in options.days :
         print 'Time-series NOT found at %s' % tspath
         continue
 
-    psdpath = psddir + '/d%03d.pkl' % day
+    psdpath = psddir + 'd%03d.pkl' % day
     if psdpath in glob.glob( psdpath ) :
         print 'psd/%s exists. Nothing to do.' % psdpath
         continue

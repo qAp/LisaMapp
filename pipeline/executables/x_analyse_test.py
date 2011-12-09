@@ -66,9 +66,8 @@ if options.do_X :
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_pklX_test.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s %s')
-                               % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] ,
-                                                 setup['X']['lmax'] , setup['X']['window'] , 
+                               ( './x_pklX_test.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d %s %s %s %s %s %s')
+                               % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] , setup['X']['lmax'] ,
                                                  tsdir , csddir , orfIJdir , psddir , Xdir , cIJdir ] ) ] ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )

@@ -79,14 +79,22 @@ for day in options.days :
         file = open( tspath ) ; tsdict = cpkl.load( file ) ; file.close()
         ts = AS.TimeSeries( tsdict )
         N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N ; df = ggg.fcoarse.Cadence1
-        window = np.hanning( N )
-        norm = ( np.sum( window**2 ) / N ) / ( np.sum( window**4 ) / N ) * T*df
+        window = np.hanning( N )  #np.ones( N ) 
+        norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df
         firstavailable = False
-        
-    G += GG.data
 
-print 'normalise for coarsegraining and windowing with a Hanning window for both time-series'
-G = AS.Coarsable( norm * G )
+    dGdata = norm * GG.data
+    G += dGdata
+
+    "~~Write G_day to disk for each day here"
+    dG = AS.Coarsable( dGdata ) ; dGdict = { 'G':dG , 'ntrunc':options.lmax }
+    if Gdir+'/../GG' not in glob.glob( Gdir+'/..//GG' ) :
+        os.system( 'mkdir -p %s' % ( Gdir+'/../GG' ) )
+    file = open( Gdir+'/../GG/GG_d%03d.pkl' % day , 'wb' ) ; cpkl.dump( dGdict , file , -1 ) ; file.close()
+    "~~"
+    
+
+G = AS.Coarsable( G )
 Gdict = { 'G':G , 'ntrunc':options.lmax }
 if Gdir not in glob.glob( Gdir ) :
     os.system( 'mkdir -p %s' % Gdir )
