@@ -87,7 +87,10 @@ for day in options.days :
         X = np.zeros( np.shape(XX.data) , complex )
         print 'normalise for coarsegraining and windowing with a Hanning window for both time-series'
         N = xxx.ts.t.data.shape[0] ; T = xxx.ts.t.Cadence1 * N ; df = xxx.fcoarse.Cadence1
-        window = np.hanning( N ) #np.ones( N ) 
+        if options.window == 'None' :
+            window = np.ones( N )
+        elif options.window == 'hanning' :
+            window = np.hanning( N ) 
         norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df
         firstavailable = False
 
