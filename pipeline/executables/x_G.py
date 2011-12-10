@@ -35,6 +35,9 @@ parser.add_option( '--fhigh' , action='store' , dest='fhigh' , type='float' , de
 parser.add_option( '--lmax' , action='store' , dest='lmax' , type='int' , default=20 , nargs=1 ,
                    help='Maximum l to take into account in estimating G' )
 
+parser.add_option( '--window' , action='store' , dest='window' , type='string' , nargs=1 ,default='None' ,
+                   help='Window applied to the time-series for forming the cross-spectra' )
+
 ( options , args ) = parser.parse_args()
 
 
@@ -75,11 +78,13 @@ for day in options.days :
 
     if firstavailable:
         G = np.zeros( GG.data.shape , complex )
-        print 'Calculating normalisation factor due to coarsegraining and windowing with a Hanning window for both time-series'
-        file = open( tspath ) ; tsdict = cpkl.load( file ) ; file.close()
-        ts = AS.TimeSeries( tsdict )
+        print 'Calculating normalisation factor due to coarsegraining and windowing'
+        file = open( tspath ) ; tsdict = cpkl.load( file ) ; file.close() ; ts = AS.TimeSeries( tsdict )
         N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N ; df = ggg.fcoarse.Cadence1
-        window = np.hanning( N )  #np.ones( N ) 
+        if options.window == 'None' :
+            window = np.ones( N )
+        elif options.window == 'hanning' :
+            window = np.hanning( N )
         norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df
         firstavailable = False
 

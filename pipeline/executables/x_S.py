@@ -32,6 +32,9 @@ parser.add_option( '--fhigh' , action='store' , dest='fhigh' , type='float' , de
 parser.add_option( '--lmax' , action='store' , dest='lmax' , type='int' , default=20 , nargs=1 ,
                    help='Maximum l to take into account in estimating X' )
 
+parser.add_option( '--window' , action='store' , dest='window' , type='string' , nargs=1 ,default='None' ,
+                   help='Window applied to the time-series for forming the cross-spectra' )
+
 ( options , args ) = parser.parse_args()
 
 if len( args ) < 5 :
@@ -64,11 +67,15 @@ for day in options.days :
     
     if firstavailable :
         Sdata = np.zeros( SSdata.shape , dtype = SSdata.dtype )
-        print 'Calculating normalisation factor due to coarsegraining and windowing with a Hanning window for both time-series...'
+        print 'Calculating normalisation factor due to coarsegraining and windowing'
         tspath = tsdir + '/d%03d.pkl' % day
         file = open( tspath , 'rb' ) ; tsdict = cpkl.load( file ) ; file.close() ; ts = AS.TimeSeries( tsdict )
-        N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N ; window = np.hanning( N )  #np.ones( N ) 
+        N = ts.t.data.shape[0] ; T = ts.t.Cadence1 * N 
         fcoarse = AS.coarsefrequency( orf.f , psddict['f'] , csddict['f'] ) ; df = fcoarse.Cadence1
+        if options.window == 'None' :
+            window = np.ones( N )
+        elif options.window == 'hanning' :
+            window = np.hanning( N )
         norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df        
         firstavailable = False
 
