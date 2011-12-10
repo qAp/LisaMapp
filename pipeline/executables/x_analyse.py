@@ -138,9 +138,9 @@ if options.do_G :
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s')
+                               ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s')
                                % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] , setup['G']['lmax'] ,
-                                                 tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ] ) ; file.close()
+                                                 setup['X']['window'] , tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ] ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
 
@@ -168,9 +168,9 @@ if options.do_S :
             file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' %submitname , '#PBS -q compute\n' ,
                                '#PBS -j oe\n' , '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' , '\n' ,
-                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s' )
+                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s' )
                                % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
-                                                 tsdir , csddir , orfIJdir , psddir , Spath ] ) ] ) ; file.close()
+                                                 setup['X']['window'] , tsdir , csddir , orfIJdir , psddir , Spath ] ) ] ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
 
 
