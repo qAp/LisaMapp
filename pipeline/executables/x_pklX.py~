@@ -35,6 +35,9 @@ parser.add_option( '--fhigh' , action='store' , dest='fhigh' , type='float' , de
 parser.add_option( '--lmax' , action='store' , dest='lmax' , type='int' , default=20 , nargs=1 ,
                    help='Maximum l to take into account in estimating X' )
 
+parser.add_option( '--window' , action='store' , dest='window' , type='string' , nargs=1 ,default='None' ,
+                   help='Window applied to the time-series for forming the cross-spectra' )
+
 ( options , args ) = parser.parse_args()
 
 
@@ -62,7 +65,8 @@ for day in options.days :
     if psdpath not in glob.glob( psdpath ) :
         print 'PSD not available on day %03d' % day ; days_skipped += [ day ] ; continue
     if orfpath not in glob.glob( orfpath ) :
-        print 'ORF not availalbe on day %03d' % day ; days_skipped += [ day ] ; continue
+        print 'ORF not found at %s' % orfpath ; days_skipped += [ day ] ; continue
+#        print 'ORF not availalbe on day %03d' % day ; days_skipped += [ day ] ; continue
 
     print "Time-series, psd and orf all available on day %03d. " % day
     print "First available day?"  , firstavailable
@@ -77,20 +81,31 @@ for day in options.days :
     orf = AS.OrfMultipleMoments( orfpath )
     
     xxx = AS.XXX( orf , psddict , ts , options.GWslope , day , cIJdir=cIJdir )
-    XX = xxx.getsummand( flow=options.flow , fhigh=options.fhigh , lmax=options.lmax )
+    XX = xxx.getsummand( flow=options.flow , fhigh=options.fhigh , lmax=options.lmax , window=options.window )
 
     if firstavailable :
         X = np.zeros( np.shape(XX.data) , complex )
+        print 'normalise for coarsegraining and windowing with a Hanning window for both time-series'
+        N = xxx.ts.t.data.shape[0] ; T = xxx.ts.t.Cadence1 * N ; df = xxx.fcoarse.Cadence1
+        if options.window == 'None' :
+            window = np.ones( N )
+        elif options.window == 'hanning' :
+            window = np.hanning( N ) 
+        norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df
         firstavailable = False
 
-    X += XX.data
+    dXdata = norm * XX.data
+    X += dXdata
 
-'normalise for coarsegraining and windowing with a Hanning window for both time-series'
-N = xxx.ts.t.data.shape[0] ; T = xxx.ts.t.Cadence1 * N ; df = xxx.fcoarse.Cadence1
-window = np.hanning( N )
-norm = ( np.sum( window**2 ) / N ) / ( np.sum( window**4 ) / N ) * T*df
+    "~~Write X_day to disk for each day here"
+    map_dX = AS.xlmSkyMap( xlm = dXdata )
+    if Xdir+'/../XX' not in glob.glob( Xdir+'/../XX' ) :
+        os.system( 'mkdir -p %s' % ( Xdir+'/../XX' ) )
+    file = open( Xdir+'/../XX/XX_d%03d.pkl' % day , 'wb' ) ; cpkl.dump( map_dX , file , -1 ) ; file.close()
+    "~~"
 
-map_X = AS.xlmSkyMap( xlm = norm * X )
+
+map_X = AS.xlmSkyMap( xlm = X )
 
 if Xdir not in glob.glob( Xdir ) :
     os.system( 'mkdir -p %s' % Xdir )

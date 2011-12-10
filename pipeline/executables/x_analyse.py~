@@ -11,6 +11,7 @@ parser.add_option( '--do_csd' , action='store_true' , help='Estimate CSDs' )
 parser.add_option( '--do_avgpsd' , action='store_true' , help='Calculate average PSDs' )
 parser.add_option( '--do_X' , action='store_true' , help='Esimtate X, the dirty map' )
 parser.add_option( '--do_G' , action='store_true' , help='Estimate G, the Fisher Matrix' )
+parser.add_option( '--do_S' , action='store_true' , help='Estimate S, the strong signal bias matrix' )
 parser.add_option( '--plot_ts' , action='store_true' , help='Plot time-series' )
 
 
@@ -25,7 +26,7 @@ file = open( setupname , 'rb' ) ; setup = cpkl.load( file ) ; file.close()
 
 execdir = setup['execdir'] 
 tsdir = setup['tsdir'] 
-workdir = os.getcwd() + setup['workdir']
+workdir = os.getcwd() + '/' + setup['workdir']
 
 scale_ts = setup['scale_ts']
 
@@ -84,7 +85,7 @@ if options.do_X :
     for slope in setup['X']['GWslopes'] :
         for IJ in setup['X']['IJs'] :
             print ( 'H(f) = f^{%d}' % slope ) , ( '%s' % IJ )
-            orfIJdir = orfdir + '/tdiI_Michelson_G2_%s_tdiJ_Michelson_G2_%s_lmax_20_f0_0.000100_df_0.000100_Nf_4999/data_nlon_120_nlat_61/' % tuple( IJ )
+            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000000_df_0.000174_Nf_5761/data/' % tuple( IJ )
             Xdir = workdir + '/GW_slope_%d/%s/X/' % ( slope , IJ )
             cIJdir = workdir + '/GW_slope_%d/%s/cIJ/' % ( slope , IJ )
 #            os.system(
@@ -101,8 +102,9 @@ if options.do_X :
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d %s %s %s %s %s')
-                               % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] , setup['X']['lmax'] ,
+                               ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s')
+                               % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] ,
+                                                 setup['X']['lmax'] , setup['X']['window'] ,
                                                  tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ] ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
@@ -119,7 +121,7 @@ if options.do_G :
     for slope in setup['G']['GWslopes'] :
         for IJ in setup['G']['IJs'] :
             print ( 'H(f) = f^{%d}' % slope ) , ( '%s' % IJ )
-            orfIJdir = orfdir + '/tdiI_Michelson_G2_%s_tdiJ_Michelson_G2_%s_lmax_20_f0_0.000100_df_0.000100_Nf_4999/data_nlon_120_nlat_61/' % tuple( IJ )
+            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000000_df_0.000174_Nf_5761/data/' % tuple( IJ )
             Gdir = workdir + '/GW_slope_%d/%s/G/' % ( slope , IJ )
             cIIdir = workdir + '/GW_slope_%d/%s/cII/' % ( slope , IJ )            
 #            os.system(
@@ -140,6 +142,38 @@ if options.do_G :
                                % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] , setup['G']['lmax'] ,
                                                  tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ] ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
+    os.chdir( workdir )
+
+
+
+
+if options.do_S :
+    print 'Calculating the bias matrix of the covariance of the Plm in the strong-signal limit...'
+    os.chdir( workdir )
+    os.system( 'cp %s .' % ( execdir + '/x_S.py' ) )
+    csddir = setup['S']['csddir']
+    psddir = workdir + '/avgpsd/'
+    orfdir = setup['S']['orfdir']
+    days = setup['S']['days']
+    for slope in setup['S']['GWslopes'] :
+        for IJ in setup['S']['IJs'] :
+            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
+            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000000_df_0.000174_Nf_5761/data/' % tuple( IJ )
+            Spath = workdir + '/GW_slope_%d/%s/S/S.pkl' % ( slope , IJ )            
+#            os.system( ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s' )
+#                       % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
+#                                         tsdir , csddir , orfIJdir , psddir , Spath ] ) )
+            submitname = 'x_S_slope_%d_IJ_%s.sub' % ( slope , IJ )
+            file = open( submitname , 'w' )
+            file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' %submitname , '#PBS -q compute\n' ,
+                               '#PBS -j oe\n' , '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=5:00:00\n' ,
+                               'cd $PBS_O_WORKDIR\n' , '\n' ,
+                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s' )
+                               % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
+                                                 tsdir , csddir , orfIJdir , psddir , Spath ] ) ] ) ; file.close()
+            print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
+
+
     os.chdir( workdir )
 
             
