@@ -33,8 +33,8 @@ days , PPs , stdPPs , stdPPws , SSs = [] , [] , [] , [] , []
 for day in options.days :
     print 'Day %d' % day
     PPpath = PPdir + '/PP_d%03d_lmax_%d.pkl' % ( day , options.lmax )
-    stdPPpath = stdPPdir + '/stdPP_d%03d_lmax_%d_strong.pkl' % ( day , options.lmax )
-    stdPPwpath = stdPPdir + '/stdPP_d%03d_lmax_%d.pkl' % ( day , options.lmax )
+    stdPPpath = stdPPdir + '/stdPP_d%03d_lmax_%d.pkl' % ( day , options.lmax )
+    stdPPwpath = stdPPdir + '/stdPP_d%03d_lmax_%d_weak.pkl' % ( day , options.lmax )
     SSpath = SSdir + '/SS_d%03d.pkl' % day
     if PPpath not in glob.glob( PPpath ) :
         print 'PP not found at %s. Skip' % PPpath ; continue
