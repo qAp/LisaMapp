@@ -8,7 +8,7 @@ import cPickle as cpkl
 setup = {}
 
 
-setup['execdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/temp/analyse_uncorrelated_white_noises_same_white_signal/'
+setup['execdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/Mapp_codes/pipeline/executables/'
 
 setup['workdir'] = '/analysis_seed_104_stime_0.5_hanning'
 
