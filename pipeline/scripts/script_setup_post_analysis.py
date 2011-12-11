@@ -78,7 +78,7 @@ stdPP['GWslopes'] = [ 0 ]
 stdPP['days'] = range( 1 , 365+1 )
 stdPP['regMethod'] , stdPP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 stdPP['lmax'] = 0
-
+stdPP['signal limit'] = 'strong' # 'weak' , 'both'
 
 
 """ do stdP : Calculate the standard deviation of Plm """
@@ -88,7 +88,7 @@ stdP['GWslopes'] = [ 0 ]
 stdP['regMethod'] , stdP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 stdP['lmax'] = 0
 stdP['Spath'] = 'default'
-
+stdP['signal limit'] = 'strong' # 'weak' , 'both'
 
 """ do_temp_optimals : Run the executable x_temp_optimals.py """
 temp_optimals = {}

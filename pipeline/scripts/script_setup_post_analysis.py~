@@ -8,9 +8,9 @@ import cPickle as cpkl
 setup = {}
 
 
-setup['execdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/pipeline-running-scripts/new_executables/'
+setup['execdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/temp/analyse_uncorrelated_white_noises_same_white_signal/'
 
-setup['workdir'] = '/r50'
+setup['workdir'] = '/analysis_seed_104_stime_0.5_hanning'
 
 """ do_network_G : Calculate G for a network """
 network_G = {}
@@ -28,11 +28,21 @@ network_X['networks'] = [ { 'GWslope':0 , 'IJs':['AE','AT'] } ,
 
 """ do_P : Calculate the clean map """
 P = {}
-P['IJs'] = [ 'AE' , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
+P['IJs'] = [ 'AE' ] # , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
 P['GWslopes'] = [ 0 ]
 P['regMethod'] , P['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 P['lmax'] , P['nlon'] , P['nlat'] = 0 , 180 , 91
 P['mapnorm'] = 1.
+
+
+""" do_PP : Calculate the clean map """
+PP = {}
+PP['IJs'] = [ 'AE' ] # , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
+PP['GWslopes'] = [ 0 ]
+PP['days'] = range( 1 , 365+1 )
+PP['regMethod'] , PP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
+PP['lmax'] , PP['nlon'] , PP['nlat'] = 0 , 180 , 91
+PP['mapnorm'] = 1.
 
 
 """ do_sigma_avg : Calculate the sky-average standard deviation of Plm """
@@ -61,13 +71,33 @@ SNRmap['lmax'] , SNRmap['nlon'] , SNRmap['nlat'] = 15 , 180 , 91
 SNRmap['mapnorm'] = 1.
 
 
+""" do stdPP : Calculate the standard deviation of PPlms """
+stdPP = {}
+stdPP['IJs'] = [ 'AE' ]# , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
+stdPP['GWslopes'] = [ 0 ]
+stdPP['days'] = range( 1 , 365+1 )
+stdPP['regMethod'] , stdPP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
+stdPP['lmax'] = 0
+
+
+
 """ do stdP : Calculate the standard deviation of Plm """
 stdP = {}
-stdP['IJs'] = [ 'AE' , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
+stdP['IJs'] = [ 'AE' ]# , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
 stdP['GWslopes'] = [ 0 ]
 stdP['regMethod'] , stdP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 stdP['lmax'] = 0
-stdP['strong signal'] = ''
+stdP['Spath'] = 'default'
+
+
+""" do_temp_optimals : Run the executable x_temp_optimals.py """
+temp_optimals = {}
+temp_optimals['IJs'] = [ 'AE' ]
+temp_optimals['GWslopes'] = [ 0 ]
+temp_optimals['days'] = range( 1 , 365+1 )
+temp_optimals['lmax'] = 0
+
+
 
 
 """ plot_X : Plot the dirty map X """
@@ -123,11 +153,14 @@ plot_singular_values['lmax'] = 20
 
 
 setup['P'] = P
+setup['PP'] = PP
 setup['network_G'] = network_G
 setup['network_X'] = network_X
 setup['sigmamap'] = sigmamap
 setup['SNRmap'] = SNRmap
 setup['stdP'] = stdP
+setup['stdPP'] = stdPP
+setup['temp_optimals'] = temp_optimals
 setup['sigma_avg'] = sigma_avg
 setup['plot_X'] = plot_X
 setup['plot_P'] = plot_P

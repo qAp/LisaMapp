@@ -7,12 +7,15 @@ from optparse import OptionParser
 
 parser = OptionParser( '%prog SETUP.pkl' )
 parser.add_option( '--do_P' , action='store_true' , help = 'Calculate clean map P' )
+parser.add_option( '--do_PP' , action='store_true' , help = 'Calculate daily clean maps, PPs' )
 parser.add_option( '--do_network_G' , action='store_true' , help = 'Calculate G for networks' )
 parser.add_option( '--do_network_X' , action='store_true' , help = 'Calculate X for networks' )
 parser.add_option( '--do_sigma_avg' , action='store_true' , help = 'Calculate sky-average of sigma, the std of Plm' )
 parser.add_option( '--do_sigmamap' , action='store_true' , help = 'Calculate the sigma map, the standard deviation of the clean map in pixel basis)' )
 parser.add_option( '--do_stdP' , action='store_true' , help='Calculate the standard deviations of the clean map Plm' )
+parser.add_option( '--do_stdPP' , action='store_true' , help='Calculate the standard deviations of the daily clean maps PPlms' )
 parser.add_option( '--do_SNRmap' , action='store_true' , help='Calculate the SNR map' )
+parser.add_option( '--do_temp_optimals' , action='store_true' , help='Run the x_temp_optimals.py executable' )
 parser.add_option( '--plot_X' , action='store_true' , help = 'Plot the dirty map X.' )
 parser.add_option( '--plot_P' , action='store_true' , help = 'Plot the dirty map P.' )
 parser.add_option( '--plot_sigmamap' , action='store_true' , help = 'Plot sigma map' )
@@ -61,6 +64,32 @@ if options.do_network_X :
     os.chdir( workdir )
 
 
+
+
+
+if options.do_PP :
+    print 'Calculating the daily clean map...'
+    os.chdir( workdir ) ; os.system( 'cp %s .' % ( execdir + '/x_P.py' ) )
+    for slope in setup['PP']['GWslopes'] :
+        for IJ in setup['PP']['IJs'] :
+            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
+            for day in setup['PP']['days'] :
+                print 'Day %d' % day
+                GGpath = workdir + '/GW_slope_%d/%s/GG/GG_d%03d.pkl' % ( slope , IJ , day )
+                XXpath = workdir + '/GW_slope_%d/%s/XX/XX_d%03d.pkl' % ( slope , IJ , day )
+                PPpath = workdir + '/GW_slope_%d/%s/PP/PP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['PP']['lmax'] )
+                if GGpath not in glob.glob( GGpath ) :
+                    print 'GG not found at %s. Skip...' % GGpath ; continue
+                if XXpath not in glob.glob( XXpath ) :
+                    print 'XX not found at %s. Skip...' % XXpath ; continue
+                os.system( './x_P.py --regMethod %d --regCutoff %s --lmax %d --mapnorm %f --nlon %d --nlat %d --N_keptSV %s %s %s' %
+                           ( setup['PP']['regMethod'] , setup['PP']['regCutoff'] , setup['PP']['lmax'] , setup['PP']['mapnorm'] ,
+                             setup['PP']['nlon'] , setup['PP']['nlat'] , GGpath , XXpath , PPpath ) ) ; print 'done'
+
+    os.chdir( workdir )
+
+
+            
 
 
 if options.do_P :
@@ -132,6 +161,53 @@ if options.do_sigmamap :
 
 
 
+
+
+if options.do_stdPP :
+    print 'Calculating standard deviation of daily clean maps PPlm...'
+    os.chdir( workdir ) ; os.system( 'cp %s .' % ( execdir + '/x_stdP.py' ) )
+    for slope in setup['stdPP']['GWslopes'] :
+        for IJ in setup['stdPP']['IJs'] :
+            for day in setup['stdPP']['days'] :
+                print 'GWslope = %d , IJ = %s , Day %d' % ( slope , IJ , day )
+                GGpath = workdir + '/GW_slope_%d/%s/GG/GG_d%03d.pkl' % ( slope , IJ , day )
+                if GGpath not in glob.glob( GGpath ) :
+                    print 'GG not found at %s. Skip...' % GGpath ; continue
+                if setup['stdPP']['signal limit'] == 'weak' :
+                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )
+                    os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s' %
+                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] , 
+                                 GGpath , stdPPpath ) ) ; print 'done'
+                elif setup['stdPP']['signal limit'] == 'strong' :
+                    SSpath = workdir + '/GW_slope_%d/%s/SS/SS_d%03d.pkl' % ( slope , IJ , day )
+                    if SSpath not in glob.glob( SSpath ) :
+                        print 'SS not found at %s.  Skip...' % SSpath ; continue
+                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d_strong.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )           
+                    os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s' %
+                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] ,
+                                 SSpath , GGpath , stdPPpath ) ) ; print 'done'
+                elif setup['stdPP']['signal limit'] == 'both' :
+                    if SSpath not in glob.glob( SSpath ) :
+                        print 'SS not found at %s.  Skip...' % SSpath ; continue
+                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )
+                    os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --Spath %s %s %s' %
+                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] ,
+                                 SSpath , GGpath , stdPPpath ) ) 
+                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d_strong.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )           
+                    os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s' %
+                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] ,
+                                 SSpath , GGpath , stdPPpath ) ) ; print 'done'                    
+
+
+
+
+    os.chdir( workdir )
+
+
+
+
+
+
 if options.do_stdP :
     print 'Calculating standard deviation of clean map Plm...'
     os.chdir( workdir ) ; os.system( 'cp %s .' % ( execdir + '/x_stdP.py' ) )
@@ -139,10 +215,28 @@ if options.do_stdP :
         for IJ in setup['stdP']['IJs'] :
             print 'GWslope = %d , IJ = %s' % ( slope , IJ )
             Gpath = workdir + '/GW_slope_%d/%s/G/G.pkl' % ( slope , IJ )
-            stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
-            os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal %s %s %s' %
-                       ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['strong signal']
-                         , Gpath , stdPpath ) ) ; print 'done'
+            if Gpath not in glob.glob( Gpath ) :
+                print 'G not found at %s. Skip...' % Gpath
+            if setup['stdP']['signal limit'] == 'weak' :
+                stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
+                os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s' %
+                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , 
+                             , Gpath , stdPpath ) ) ; print 'done'
+            elif setup['stdP']['signal limit'] == 'strong' :
+                stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
+                os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s' %
+                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['Spath']
+                             , Gpath , stdPpath ) ) ; print 'done'
+            elif setup['stdP']['signal limit'] == 'both' :
+                stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
+                os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s' %
+                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , 
+                             , Gpath , stdPpath ) ) 
+                stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
+                os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s' %
+                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['Spath']
+                             , Gpath , stdPpath ) ) ; print 'done'
+                
 #            submitname = 'x_stdP_slope_%d_IJ_%s.sub' % ( slope , IJ )
 #            file = open( submitname , 'w' )
 #            file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' % submitname , '#PBS -q compute\n' , '#PBS -j oe\n' ,
@@ -305,5 +399,24 @@ if options.plot_singular_values :
 
 
     print 'done' ; os.chdir( workdir )
+
+
+
+
+if options.do_temp_optimals :
+    print 'x_temp_optimals.py...'
+    os.chdir( workdir ) ; os.system( 'cp %s .' % ( execdir + 'x_temp_optimals.py' ) )
+    for slope in setup['temp_optimals']['GWslopes'] :
+        for IJ in setup['temp_optimals']['IJs'] :
+            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
+            PPdir = workdir + '/GW_slope_%d/%s/PP' % ( slope , IJ )
+            stdPPdir = workdir + '/GW_slope_%d/%s/stdPP' % ( slope , IJ )
+            SSdir = workdir + '/GW_slope_%d/%s/SS' % ( slope , IJ )
+            sumdir = workdir + '/GW_slope_%d/%s/optimals/summary_lmax_%d.pkl' % ( slope , IJ , setup['temp_optimals']['lmax'] )
+            os.system( ( './x_temp_optimals.py ' + '-d%d '*len(setup['temp_optimals']['days']) + '--lmax %d %s %s %s %s' ) %
+                       tuple( setup['temp_optimals']['days'] + [ setup['temp_optimals']['lmax'] , PPdir , stdPPdir , SSdir , sumdir ] ) ) ; print 'done'
+
+
+    os.chdir( workdir )
 
 
