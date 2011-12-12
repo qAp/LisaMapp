@@ -404,14 +404,10 @@ class TimeSeries(object):
             raise ValueError, 'fftlength < length of data' 
         z = np.zeros( fftlength - len(x.data) )
         xbar = sp.fft( np.array( list(x.data*window) + list(z) ) )
-        winfftx = xbar[ 0:np.floor( fftlength/2+1 ) ]*x.Cadence1
-        print 'fftlength' , fftlength
-        print 'np.floor( fftlength/2+1 )' , np.floor( fftlength/2+1 )
+        winfftx = xbar[ 0:int( fftlength/2+1 ) ]*x.Cadence1
         df = 1. / (x.Cadence1*fftlength)
         f =  df*np.arange( len(winfftx) )
-        print 'f[0] , df , f[-1]' , f[0] , df , f[-1]
-        print 'f.shape , winfftx.shape' , f.shape , winfftx.shape
-        return 'f , winfftx' , f , winfftx
+        return f , winfftx
     def CrossSpectraData(self,xstr,ystr,window,fftlength,coarsable=False):
         """Return cross spectral data 
 
