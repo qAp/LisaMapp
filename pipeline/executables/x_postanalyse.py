@@ -187,6 +187,7 @@ if options.do_stdPP :
                                ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] ,
                                  SSpath , GGpath , stdPPpath ) ) ; print 'done'
                 elif setup['stdPP']['signal limit'] == 'both' :
+                    SSpath = workdir + '/GW_slope_%d/%s/SS/SS_d%03d.pkl' % ( slope , IJ , day )
                     if SSpath not in glob.glob( SSpath ) :
                         print 'SS not found at %s.  Skip...' % SSpath ; continue
                     stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )

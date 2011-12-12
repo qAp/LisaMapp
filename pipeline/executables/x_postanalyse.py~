@@ -221,21 +221,21 @@ if options.do_stdP :
                 stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
                 os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s' %
                            ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , 
-                             , Gpath , stdPpath ) ) ; print 'done'
+                             Gpath , stdPpath ) ) ; print 'done'
             elif setup['stdP']['signal limit'] == 'strong' :
                 stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
                 os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s' %
-                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['Spath']
-                             , Gpath , stdPpath ) ) ; print 'done'
+                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] ,
+                             setup['stdP']['Spath'] , Gpath , stdPpath ) ) ; print 'done'
             elif setup['stdP']['signal limit'] == 'both' :
                 stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
                 os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s' %
                            ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , 
-                             , Gpath , stdPpath ) ) 
+                             Gpath , stdPpath ) ) 
                 stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
                 os.system( './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s' %
-                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['Spath']
-                             , Gpath , stdPpath ) ) ; print 'done'
+                           ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] ,
+                             setup['stdP']['Spath'] , Gpath , stdPpath ) ) ; print 'done'
                 
 #            submitname = 'x_stdP_slope_%d_IJ_%s.sub' % ( slope , IJ )
 #            file = open( submitname , 'w' )
