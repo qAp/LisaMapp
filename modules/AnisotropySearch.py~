@@ -626,13 +626,13 @@ class XXX(object):
 
         if  fhigh < flow :
             print "fhigh must be >= flow"
-            raise 
+            raise ValueError
         elif flow < self.fcoarse.data[0] :
             print "flow must be >= %f" % self.fcoarse.data[0]
-            raise 
+            raise ValueError
         elif fhigh > self.fcoarse.data[-1] :
             print "fhigh must be <= %f" % self.fcoarse.data[-1]
-            raise 
+            raise ValueError
 
         glm = self.orf.getMultipleMoments( 'pn' , lmax )
         pII = self.psd[ 2*self.pair[0] ]
