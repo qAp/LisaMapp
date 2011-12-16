@@ -289,33 +289,11 @@ def coarsefrequency(*fcoarsables):
     
     """
 
-    offsets = [ f.Cadence1 for f in fcoarsables ] 
-    offsets_coarsables = zip( offsets , fcoarsables )
-    offsets_coarsables.sort()
-    offsets_coarsables.reverse()
-    coarsables = [ f[1] for f in offsets_coarsables ]
-    F , fineones = coarsables[0] , coarsables[1:]
+    cadences = [ fcoarsable.Cadence1 for fcoarsable in fcoarsables ]
+    cadences.sort() ; cadences.reverse() ; dF = cadences[0]
 
-    leds  = [ f.data[0]  - f.Cadence1/2. for f in fineones ]
-    leds_fineones = zip( leds , fineones )
-    leds_fineones.sort()
-    highest_led , lowone  = leds_fineones[-1][0] , leds_fineones[-1][-1]
 
-    heds = [ f.data[-1] + f.Cadence1/2. for f in fineones ]
-    heds_fineones = zip( heds , fineones )
-    heds_fineones.sort()
-    lowest_hed , highone = heds_fineones[0][0] , heds_fineones[0][-1]
-        
-    if F.data[0]-F.Cadence1/2. >= highest_led :
-        Nlow = 0
-    else:
-        Nlow = np.ceil( (highest_led - (F.data[0]-F.Cadence1/2.)) / F.Cadence1 ) 
 
-    if F.data[-1]+F.Cadence1/2. <= lowest_hed :
-        data = F.data[ Nlow : ]
-    else:
-        Nhigh = np.floor( (lowest_hed - (F.data[0]+F.Cadence1/2.)) / F.Cadence1 ) 
-        data = F.data[ Nlow : Nhigh + 1 ]
 
     fcoarse = Coarsable( data , 
                          Offset1 = data[0] , Cadence1 = F.Cadence1 )
@@ -599,8 +577,12 @@ class XXX(object):
         This takes not input parameters. It also assigns the coarsegrain frequencies as a new attirbute of the instance.
         
         """
+        print 'glm. f0 , df , f[-1]' , self.orf.f.Offset1 , self.orf.f.Cadence1 , self.orf.f.Offset1 + self.orf.f.Cadence1*( self.orf.f.data.shape[0] - 1 )
+        print 'pII. f0 , df , f[-1]' , self.psd['f'].Offset1 , self.psd['f'].Cadence1 , self.psd['f'].Offset1 + self.psd['f'].Cadence1*( self.psd['f'].data.shape[0] - 1 )
+        print 'cIJ. f0 , df , f[-1]' , self.fcsdata.Offset1 , self.fcsdata.Cadence1 , self.fcsdata.Offset1 + self.fcsdata.Cadence1*( self.fcsdata.data.shape[0] - 1 )
         fcoarse = coarsefrequency( self.orf.f , self.psd['f'] , self.fcsdata )
         self.fcoarse = fcoarse
+        print 'fcoarse0 , dfcoarse , fcoarse[-1]' , self.fcoarse.Offset1 , self.fcoarse.Cadence1 , self.fcoarse.data[-1]
         return fcoarse
 
     def getintegrand(self,flow=1.4e-4,fhigh=1e-1 , lmax=20 , window='None' ):
@@ -650,14 +632,12 @@ class XXX(object):
 #        cpkl.dump( cIJdict , file , -1 )
 #        file.close()
 #########################################################################
-        
         inputs = { 'Offset1'  : self.fcoarse.Offset1 ,
                    'Cadence1' : self.fcoarse.Cadence1 ,
                    'N1'       : len( self.fcoarse.data ) }
         glm = glm.coarsegrain( **inputs )
         pII , pJJ  = pII.coarsegrain( **inputs ) , pJJ.coarsegrain( **inputs )
         csdata = csdata.coarsegrain( **inputs )
-
 ######################## save csdata , pII , PJJ ####################(1)
         cIJdict = { 'f':self.fcoarse , 2*self.pair[0]:pII , 2*self.pair[1]:pJJ , self.pair:csdata }
         if self.cIJdir not in glob.glob( self.cIJdir ) :
@@ -841,6 +821,11 @@ def get_covariance_bias_matrix_for_the_day( orf , psd , csd , alpha , day , flow
     cIJ , pII , pJJ = csd[ IJ ] , psd[ 2*IJ[0] ] , psd[ 2*IJ[1] ]
     fcoarse = coarsefrequency( orf.f , psd['f'] , csd['f'] )
 
+    print 'glm. f0 , df , f[-1]' , orf.f.Offset1 , orf.f.Cadence1 , orf.f.Offset1 + orf.f.Cadence1*( orf.f.data.shape[0] - 1 )
+    print 'pII. f0 , df , f[-1]' , psd['f'].Offset1 , psd['f'].Cadence1 , psd['f'].Offset1 + psd['f'].Cadence1*( psd['f'].data.shape[0] - 1 )
+    print 'pIJ. f0 , df , f[-1]' , csd['f'].Offset1 , csd['f'].Cadence1 , csd['f'].Offset1 + csd['f'].Cadence1*( csd['f'].data.shape[0] - 1 )
+    print 'fcoarse0 , dfcoarse , fcoarse[-1]' , fcoarse.Offset1 , fcoarse.Cadence1 , fcoarse.data[-1]
+
     inputs = { 'Offset1':fcoarse.Offset1 , 'Cadence1':fcoarse.Cadence1 , 'N1':len(fcoarse.data) }
     glm = glm.coarsegrain( **inputs )
     cIJ , pII , pJJ = cIJ.coarsegrain( **inputs ) , pII.coarsegrain( **inputs ) , pJJ.coarsegrain( **inputs )
@@ -916,8 +901,11 @@ class GGG(object):
         This takes not input parameters. It also assigns the coarsegrain frequencies as a new attirbute of the instance.         
 
         """
+        print 'glm. f0 , df , f[-1]' , self.orf.f.Offset1 , self.orf.f.Cadence1 , self.orf.f.Offset1 + self.orf.f.Cadence1*( self.orf.f.data.shape[0] - 1 )
+        print 'pII. f0 , df , f[-1]' , self.psd['f'].Offset1 , self.psd['f'].Cadence1 , self.psd['f'].Offset1 + self.psd['f'].Cadence1*( self.psd['f'].data.shape[0] - 1 )
         fcoarse = coarsefrequency( self.orf.f , self.psd['f'] )
         self.fcoarse = fcoarse
+        print 'fcoarse0 , dfcoarse , fcoarse[-1]' , self.fcoarse.Offset1 , self.fcoarse.Cadence1 , self.fcoarse.data[-1]
         return fcoarse
 
     def getmlmlintegrand( self , ml1 , ml2 , flow=1.4e-4 , fhigh=1e-1 , lmax=20 ):

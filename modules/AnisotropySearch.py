@@ -276,9 +276,9 @@ class Coarsable(object):
             return coarsedata
 
 
-def coarsefrequency(*fcoarsables):
+def coarsefrequency( *fcoarsables ):
     """Return the coarsest frequencies in the common frequency range.
-    
+
     Positional parameter:
     *fcoarsables -- coarsable object/objects of a 1D numpy array of frequencies.
 
@@ -286,39 +286,47 @@ def coarsefrequency(*fcoarsables):
     Coarsable object of a 1D numpy array of frequencies. 
     The cadence is the largest among the input set of frequencies.
     The range is the widest and common range shared by the input set of frequencies.
-    
     """
+    Qfs = list( fcoarsables )
+    cadences = [ Qf.Cadence1 for Qf in Qfs ]
+    cad_fcos = zip( cadences , Qfs )
+    cad_fcos.sort() ; cad_fcos.reverse() ; dF = cad_fcos[0][0] ; "This finds the coarsest cadence."
+    
+    roughones = Qfs[ : cadences.count( dF ) ]
+    fineones = Qfs[ cadences.count( dF ) : ] ; "Arrays sorted into those with the coarsest (rough ones), and those with finer cadences (fine ones)."
 
-    offsets = [ f.Cadence1 for f in fcoarsables ] 
-    offsets_coarsables = zip( offsets , fcoarsables )
-    offsets_coarsables.sort()
-    offsets_coarsables.reverse()
-    coarsables = [ f[1] for f in offsets_coarsables ]
-    F , fineones = coarsables[0] , coarsables[1:]
+    Flows = [ roughone.Offset1 - roughone.Cadence1 / 2 for roughone in roughones ]
+    Flo_rous = zip( Flows , roughones )
+    Flo_rous.sort() ; Flo_rous.reverse()
+    A = Flo_rous[0][1] ; "Identified the array, among the rough ones, with the highest lower edge."
 
-    leds  = [ f.data[0]  - f.Cadence1/2. for f in fineones ]
-    leds_fineones = zip( leds , fineones )
-    leds_fineones.sort()
-    highest_led , lowone  = leds_fineones[-1][0] , leds_fineones[-1][-1]
+    if len( fineones ) == 0 :
+        index_low = 0
+    else :
+        flows = [ fineone.Offset1 - fineone.Cadence1 / 2 for fineone in fineones ]
+        flows.sort() ; flows.reverse()
+        flow_highest = flows[0] ; "Found the highest lower edge among the fine ones."
+        "This computes how many coarsest cadences are between the highest lower edge among the fine ones and the lower edge of A."
+        lowerdiff = ( flow_highest - ( A.Offset1 - A.Cadence1 / 2 ) ) / A.Cadence1
+        if lowerdiff <= 0 :
+            index_low = 0
+        else :
+            index_low = int( np.ceil( lowerdiff ) ) ; "Index of the lowest bin from A whose lower edge is above the highest lower edge among the fine ones."
 
-    heds = [ f.data[-1] + f.Cadence1/2. for f in fineones ]
-    heds_fineones = zip( heds , fineones )
-    heds_fineones.sort()
-    lowest_hed , highone = heds_fineones[0][0] , heds_fineones[0][-1]
-        
-    if F.data[0]-F.Cadence1/2. >= highest_led :
-        Nlow = 0
-    else:
-        Nlow = np.ceil( (highest_led - (F.data[0]-F.Cadence1/2.)) / F.Cadence1 ) 
 
-    if F.data[-1]+F.Cadence1/2. <= lowest_hed :
-        data = F.data[ Nlow : ]
-    else:
-        Nhigh = np.floor( (lowest_hed - (F.data[0]+F.Cadence1/2.)) / F.Cadence1 ) 
-        data = F.data[ Nlow : Nhigh + 1 ]
+    fhighs = [ Qf.data[-1] + Qf.Cadence1 / 2 for Qf in Qfs ]
+    fhighs.sort() 
+    fhigh_lowest = fhighs[0] ; "Found the lowest higher edge among all arrays."
+    "This computes how many coarsest cadences are between the lowest higher edge among all arrays and the higher edge of A."
+    higherdiff = ( fhigh_lowest - ( A.data[-1] + A.Cadence1 / 2 ) ) / A.Cadence1
+
+    if higherdiff >= 0 :
+        data = np.copy( A.data[ index_low : ] )
+    else :
+        data = np.copy( A.data[ index_low : int( np.floor( higherdiff ) ) ] ) ; "Index of the highest bin from A whose higher edge is lower than the lowest higher edge among all arrays, plus one."
 
     fcoarse = Coarsable( data , 
-                         Offset1 = data[0] , Cadence1 = F.Cadence1 )
+                         Offset1 = data[0] , Cadence1 = dF )
     return fcoarse
 
 
