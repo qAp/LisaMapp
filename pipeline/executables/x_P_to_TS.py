@@ -56,10 +56,9 @@ if len( args ) < 3 :
 
 Ppath , orfdir , tsdir = args[ :3 ]
 
-fNyq = 1. / ( 2 * options.stime )
-print fNyq , ( options.Nf + 1 ) * options.df
-if ( ( options.Nf + 1 ) * options.df ) != fNyq :
-    raise InputError , 'The Nyquist frequency of ORF does not match the desired Nyquist frequency.  Cannot simulate.'
+#fNyq = 1. / ( 2 * options.stime )
+#if ( ( options.Nf + 1 ) * options.df ) != fNyq :
+#    raise InputError , 'The Nyquist frequency of ORF does not match the desired Nyquist frequency.  Cannot simulate.'
 
 if options.whichtdi == 'ordinary' :
     IJlist = [ '11' , '12' , '13' , '22' , '23' , '33' ]
