@@ -1,26 +1,24 @@
 #!/usr/bin/env python
-
-
+import os
 import sys
-import numpy
-import cPickle
-import LISAresponse 
-import Utilities4 as U4
+import cPickle as cpkl
+import AnisotropySearch as AS
+import PostProcess as PP
 
 
 
-mapdir = ''
+mapdir = './'
 
 
-l =                   #of Ylm
-m =                   #of Ylm
-Amplitude =           #Real number only please!
+l = 0                  #of Ylm
+m = 0                  #of Ylm
+Amplitude = 1e-38          #Real number only please!
 
 nlon = 360
 nlat = 181
 
 ntrunc = 20
-skymap = U4.xlmSkyMap( ntrunc=ntrunc )
+skymap = AS.xlmSkyMap( ntrunc=ntrunc )
 if m % 2 == 0 :
     if m == 0:
         skymap.alter_ml( False , (m,l,Amplitude) )
@@ -36,11 +34,11 @@ skymap.qlm_to_Q()
 skymap.PQ_to_X()
 
 
-mapname = 'Y_l%d-m%d.pkl' % ( l , m )
+mapname = 'Y_l%d_m%d.pkl' % ( l , m )
 mappath = mapdir + mapname
 file = open( mappath , 'wb' )
-cPickle.dump( skymap , file , -1 )
+cpkl.dump( skymap , file , -1 )
 file.close()
 
 
-U4.project_SkyMap_Mollweide( skymap )
+PP.project_SkyMap( skymap )
