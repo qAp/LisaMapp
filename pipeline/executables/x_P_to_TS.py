@@ -77,9 +77,8 @@ for day in options.days :
 
     T0 = ( day - 1 ) * duration
 
-    orfpaths = [ orfdir + 'tdiI_%s_%s_%s_tdiJ_%s_%s_%s_lmax_%d_f0_%f_df_%f_Nf_%d/data_nlon_120_nlat_61/orf_d%03d.pkl' 
-                 % ( options.tditype , options.tdigen , IJ[0] , options.tditype , options.tdigen , IJ[1] ,
-                     options.lmax , options.f0 , options.df , options.Nf , day ) for IJ in IJlist ]
+    orfpaths = [ orfdir + 'tdiI_%s_tdiJ_%s_lmax_%d_f0_%f_df_%f_Nf_%d/data_nlon_120_nlat_61/orf_d%03d.pkl' 
+                 % ( IJ[0] , IJ[1] , options.lmax , options.f0 , options.df , options.Nf , day ) for IJ in IJlist ]
     orfs     = [ AS.OrfMultipleMoments( orfpath ) for orfpath in orfpaths ]
 
     cspecs = [ AS.Convolve( orf , skymap , options.GWslope ) for orf in orfs ]
