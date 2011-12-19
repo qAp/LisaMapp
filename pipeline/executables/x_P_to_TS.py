@@ -121,8 +121,8 @@ for day in options.days :
         if options.seed == 'None' :
             shortftl = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=None ) ; shortftr = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=None )
         else :
-            seedl = int( options.seed ) + ( day - 1 )*2*Nseg + ( i - 1 )*2 + 1 ; seedr = int( options.seed ) + ( day - 1 )*2*Nseg + ( i - 1 )*2 + 2
-            print seedl , seedr
+            seedl = int( options.seed ) + ( day - 1 )*Nseg + seg ; seedr = int( options.seed ) + ( day - 1 )*Nseg + ( seg + 1 )
+            print 'seeds: left, right' , seedl , seedr
             shortftl = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=seedl ) ; shortftr = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=seedr )
         stsl = AS.InverseFT( shortftl , Neven=True , tOffset=t0l ) ; stsr = AS.InverseFT( shortftr , Neven=True , tOffset=t0r )
         if i == 0 :

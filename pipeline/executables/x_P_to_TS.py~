@@ -49,6 +49,9 @@ parser.add_option( '--Nf' , action='store' , dest='Nf' , type='int' , default=49
 parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' , nargs=1 ,
                    help='Days to simulate signals for' )
 
+parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='None' ,
+                   help='Seed for the random number generator.' )
+
 ( options , args ) = parser.parse_args()
 
 if len( args ) < 3 :
@@ -77,7 +80,7 @@ for day in options.days :
 
     T0 = ( day - 1 ) * duration
 
-    orfpaths = [ orfdir + 'tdiI_%s_tdiJ_%s_lmax_%d_f0_%f_df_%f_Nf_%d/data/orf_d%03d.pkl' 
+    orfpaths = [ orfdir + 'tdiI_%s_tdiJ_%s_lmax_%d_f0_%f_df_%f_Nf_%d_g00_9/data/orf_d%03d.pkl' 
                  % ( IJ[0] , IJ[1] , options.lmax , options.f0 , options.df , options.Nf , day ) for IJ in IJlist ]
     orfs     = [ AS.OrfMultipleMoments( orfpath ) for orfpath in orfpaths ]
 
@@ -115,7 +118,12 @@ for day in options.days :
         print "~~~~ Segment pair number: %d ~~~~" % ( i + 1 )
         print "Initial times:" , t0l , ',' , t0r
         print ""
-        shortftl = AS.CSpectra_to_ShortTermFT( cspec_dict ) ; shortftr = AS.CSpectra_to_ShortTermFT( cspec_dict )
+        if options.seed == 'None' :
+            shortftl = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=None ) ; shortftr = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=None )
+        else :
+            seedl = int( options.seed ) + ( day - 1 )*2*Nseg + ( i - 1 )*2 + 1 ; seedr = int( options.seed ) + ( day - 1 )*2*Nseg + ( i - 1 )*2 + 2
+            print seedl , seedr
+            shortftl = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=seedl ) ; shortftr = AS.CSpectra_to_ShortTermFT( cspec_dict , seed=seedr )
         stsl = AS.InverseFT( shortftl , Neven=True , tOffset=t0l ) ; stsr = AS.InverseFT( shortftr , Neven=True , tOffset=t0r )
         if i == 0 :
             Offset  = stsl.s1.Offset1 ; Cadence = stsl.s1.Cadence1
