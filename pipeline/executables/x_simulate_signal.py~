@@ -58,8 +58,8 @@ for b in range( Nb ) :
                        '#PBS -l walltime=5:00:00\n' ,
                        'cd $PBS_O_WORKDIR\n' ,
                        '\n' ,
-                       ( './x_P_to_TS.py ' + '-d%d '*len(days) + '--seed %d --GWslope %d --tditype %s --tdigen %s --whichtdi %s --lmax %d --stime %f --f0 %f --df %f --Nf %d %s %s %s' )
-               % tuple( days + [ setup['seed'] , setup['GWslope'] , setup['tditype'] , setup['tdigen'] , setup['whichtdi'] , setup['lmax'] , setup['stime'] ,
+                       ( './x_P_to_TS.py ' + '-d%d '*len(days) + '--GWslope %d --tditype %s --tdigen %s --whichtdi %s --lmax %d --stime %f --f0 %f --df %f --Nf %d %s %s %s' )
+               % tuple( days + [ setup['GWslope'] , setup['tditype'] , setup['tdigen'] , setup['whichtdi'] , setup['lmax'] , setup['stime'] ,
                                  setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , setup['tsdir'] ] ) ] )
     file.close()
     os.system( 'qsub %s' % submitname )

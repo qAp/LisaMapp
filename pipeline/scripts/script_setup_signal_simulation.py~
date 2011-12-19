@@ -5,6 +5,8 @@ import cPickle as cpkl
 
 """
 This sets up the simulation of data time-series lasting one day on different days of the year.
+The option of preserving the seed (for random number generation) for repeated simulation is not enabled.
+(It is not obvious how this can be done when simulating using Torque)
 """
 
 
@@ -40,9 +42,6 @@ setup['f0'] , setup['df'] , setup['Nf'] = 0.0001 , 0.0001 , 4999
 
 """ On what days to simulate data? """
 setup['days'] = range( 1 , 365+1 )
-
-""" Seed for the random number generator """
-setup['seed'] = 100
 
 """ Number of batches to divided the days into """
 setup['number of batches']  = 73
