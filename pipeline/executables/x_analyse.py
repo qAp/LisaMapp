@@ -85,7 +85,7 @@ if options.do_X :
     for slope in setup['X']['GWslopes'] :
         for IJ in setup['X']['IJs'] :
             print ( 'H(f) = f^{%d}' % slope ) , ( '%s' % IJ )
-            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759/data/' % tuple( IJ )
+            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Xdir = workdir + '/GW_slope_%d/%s/X/' % ( slope , IJ )
             cIJdir = workdir + '/GW_slope_%d/%s/cIJ/' % ( slope , IJ )
 #            os.system(
@@ -121,7 +121,7 @@ if options.do_G :
     for slope in setup['G']['GWslopes'] :
         for IJ in setup['G']['IJs'] :
             print ( 'H(f) = f^{%d}' % slope ) , ( '%s' % IJ )
-            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759/data/' % tuple( IJ )
+            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Gdir = workdir + '/GW_slope_%d/%s/G/' % ( slope , IJ )
             cIIdir = workdir + '/GW_slope_%d/%s/cII/' % ( slope , IJ )            
 #            os.system(
@@ -158,7 +158,7 @@ if options.do_S :
     for slope in setup['S']['GWslopes'] :
         for IJ in setup['S']['IJs'] :
             print 'GWslope = %d , IJ = %s' % ( slope , IJ )
-            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759/data/' % tuple( IJ )
+            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Spath = workdir + '/GW_slope_%d/%s/S/S.pkl' % ( slope , IJ )            
 #            os.system( ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s' )
 #                       % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
