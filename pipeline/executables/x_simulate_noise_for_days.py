@@ -3,6 +3,7 @@ import os
 import sys
 import glob
 import optparse
+import cPickle as cpkl
 
 usage = """
 %prog TSDIR\n
@@ -47,6 +48,8 @@ else :
     else :
         raise Exception , "Both the number of days and number of batches have to be postivie integer!"
 
+if tsdir not in glob.glob( tsdir ) :
+    os.system( 'mkdir -p %s' % tsdir )
 FIN = [] ; file = open( tsdir + '/x_simulate_noise_for_days_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
 
 
@@ -63,7 +66,7 @@ for b in range( options.Nb ) :
         else :
             seed = int( options.seed )
             commands = [ ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %d ' + tsdir + '/d%03d.pkl\n' )
-                         % ( dayinsecs*(day-1) , options.stime , dayinsecs , int( options.seed ) + day , day ) for day in days_batches[b] ]
+                         % ( dayinsecs*(day-1) , options.stime , dayinsecs , int( options.seed ) + (day-1)*1 , day ) for day in days_batches[b] ]
         submitname = 'x_simulate_noise_for_days_b%03d.sub' % batch
         file = open( submitname , 'w' )
         file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' % submitname , '#PBS -j oe\n' , '#PBS -q compute\n' ,
