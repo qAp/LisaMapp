@@ -106,6 +106,7 @@ if options.do_X :
                                % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] ,
                                                  setup['X']['lmax'] , setup['X']['window'] ,
                                                  tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ] ) ; file.close()
+            FIN = [] ; file = open( Xdir + '/x_pklX_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
 
