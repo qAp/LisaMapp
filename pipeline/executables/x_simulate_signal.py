@@ -21,6 +21,7 @@ setupname = args[0]
 file = open( setupname , 'rb' ) ; setup = cpkl.load( file ) ; file.close()
 
 execdir = setup['execdir']
+tsdir = setup['tsdir']
 
 if 'x_P_to_TS.py' not in glob.glob( 'x_P_to_TS.py' ) :
     os.system( 'cp %s .' % ( execdir + '/x_P_to_TS.py' ) )
@@ -41,14 +42,18 @@ elif Ndays % Nb > 0 :
 else :
     raise Exception , "Both the number of days and number of batches have to be postivie integer!"
 
-FIN = [] ; file = open( setup['tsdir'] + '/x_simulate_signal_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
+
+ 
+if tsdir not in glob.glob( tsdir ) :
+    os.system( 'mkdir -p %s' % tsdir ) 
+FIN = [] ; file = open( tsdir + '/x_simulate_signal_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
 
 for b in range( Nb ) :
     batch = b + 1
     days = days_batches[ b ]
 #    os.system( ( './x_P_to_TS.py ' + '-d%d '*len(days) + '--GWslope %d --tditype %s --tdigen %s --whichtdi %s --lmax %d --stime %f --f0 %f --df %f --Nf %d %s %s %s' )
 #               % tuple( days + [ setup['GWslope'] , setup['tditype'] , setup['tdigen'] , setup['whichtdi'] , setup['lmax'] , setup['stime'] ,
-#                                 setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , setup['tsdir'] ] ) )
+#                                 setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , tsdir ] ) )
 
     submitname = 'x_P_to_TS_b%03d.sub' % batch
     file = open( submitname , 'w' )
@@ -62,7 +67,7 @@ for b in range( Nb ) :
                        '\n' ,
                        ( './x_P_to_TS.py ' + '-d%d '*len(days) + '--seed %d --GWslope %d --tditype %s --tdigen %s --whichtdi %s --lmax %d --stime %f --f0 %f --df %f --Nf %d %s %s %s' )
                % tuple( days + [ setup['seed'] , setup['GWslope'] , setup['tditype'] , setup['tdigen'] , setup['whichtdi'] , setup['lmax'] , setup['stime'] ,
-                                 setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , setup['tsdir'] ] ) ] )
+                                 setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , tsdir ] ) ] )
     file.close()
     print 'Submitting batch %d' % batch
     os.system( 'qsub %s' % submitname )
