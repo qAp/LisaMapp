@@ -14,7 +14,7 @@ def get_comatrix( f ) :
     """ Define the covariance matrix here!!! """
     Nf = f.shape[ 0 ] 
     p12 , p13 , p23 = np.zeros( (Nf,) ) , np.zeros( (Nf,) ) , np.zeros( (Nf,) )
-    p11 , p22 , p33 = 1e-40 * np.ones( (Nf,) ) , 1e-40 * np.ones( (Nf,) ) , 1e-40 * np.ones( (Nf,) )
+    p11 , p22 , p33 = 1. * np.ones( (Nf,) ) , 1. * np.ones( (Nf,) ) , 1. * np.ones( (Nf,) )
     comatrix = np.array( [ [ p11 , p12 , p13 ] ,
                            [ np.conj(p12) , p22 , p23 ] ,
                            [ np.conj(p13) , np.conj(p23) , p33 ] ] )

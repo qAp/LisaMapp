@@ -47,6 +47,9 @@ else :
     else :
         raise Exception , "Both the number of days and number of batches have to be postivie integer!"
 
+FIN = [] ; file = open( tsdir + '/x_simulate_noise_for_days_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
+
+
 for b in range( options.Nb ) :
     batch = b + 1
     print "~~~~~~~~~~~~~~~~ Processing batch %d ~~~" % batch
