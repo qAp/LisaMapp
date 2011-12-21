@@ -43,7 +43,9 @@ print "Merging time-series..."
 os.chdir( workdir )
 os.system( 'cp %s .' % ( execdir + 'x_merge_ts_files.py' ) )
 
-tsdir = workdir + 'data/'
+tsdir = workdir + '/data/'
+
+FIN = [] ; file = open( tsdir + '/x_merge_tss_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
 
 for b in range( Nb ) :
     print 'Processing batch %d' % ( b + 1 )
