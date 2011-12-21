@@ -23,7 +23,7 @@ file = open( setupname , 'rb' ) ; setup = cpkl.load( file ) ; file.close()
 execdir = setup['execdir']
 
 if 'x_P_to_TS.py' not in glob.glob( 'x_P_to_TS.py' ) :
-    os.system( 'cp %s .' % ( execdir + 'x_P_to_TS.py' ) )
+    os.system( 'cp %s .' % ( execdir + '/x_P_to_TS.py' ) )
 
 workdir = os.getcwd() + '/'
 
@@ -40,6 +40,8 @@ elif Ndays % Nb > 0 :
     days_batches = [ days[ b*Ndb : (b+1)*Ndb ] for b in range( Nb-1 ) ] + [ days[ (Nb-1)*Ndb : ] ]
 else :
     raise Exception , "Both the number of days and number of batches have to be postivie integer!"
+
+FIN = [] ; file = open( setup['tsdir'] + '/x_simulate_signal_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
 
 for b in range( Nb ) :
     batch = b + 1
@@ -62,8 +64,9 @@ for b in range( Nb ) :
                % tuple( days + [ setup['seed'] , setup['GWslope'] , setup['tditype'] , setup['tdigen'] , setup['whichtdi'] , setup['lmax'] , setup['stime'] ,
                                  setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , setup['tsdir'] ] ) ] )
     file.close()
+    print 'Submitting batch %d' % batch
     os.system( 'qsub %s' % submitname )
-    print 'Batch %d submitted.' % batch
+    print 'done'
 
     
 
