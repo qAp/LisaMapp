@@ -151,9 +151,6 @@ for day in options.days :
     file = open( tsdir + '/d%03d.pkl' % day , 'wb' ) ; cpkl.dump( tsdict , file , -1 ) ; file.close()
 
 
-file = open( tsdir + '/x_simulate_signal_FIN.pkl' , 'rb' ) ; FIN = cpkl.load( file ) ; file.close()
-FIN += [ 1 ] ; file = open( tsdir + '/x_simulate_signal_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
-
 
                                                             
 

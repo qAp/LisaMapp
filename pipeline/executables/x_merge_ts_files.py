@@ -50,9 +50,4 @@ tsdir = os.path.dirname( tspath )
 if tsdir not in glob.glob( tsdir ) :
     os.system( 'mkdir -p %s' % tsdir )
 file = open( tspath , 'wb' ) ; cpkl.dump( tsdict , file , -1 ) ; file.close()
-
-    
-file = open( tsdir + '/x_merge_tss_FIN.pkl' , 'rb' ) ; FIN = cpkl.load( file ) ; file.close()
-FIN += [ 1 ]
-file = open( tsdir + '/x_merge_tss_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
     

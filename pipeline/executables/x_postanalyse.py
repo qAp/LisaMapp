@@ -34,7 +34,7 @@ setupname = args[0]
 file = open( setupname , 'rb' ) ; setup = cpkl.load( file ) ; file.close()
 
 execdir = setup['execdir'] 
-workdir = os.getcwd() + setup['workdir']
+workdir = os.getcwd() + '/' + setup['workdir']
 
 
 

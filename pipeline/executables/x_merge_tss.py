@@ -45,8 +45,6 @@ os.system( 'cp %s .' % ( execdir + 'x_merge_ts_files.py' ) )
 
 tsdir = workdir + '/data/'
 
-FIN = [] ; file = open( tsdir + '/x_merge_tss_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
-
 for b in range( Nb ) :
     print 'Processing batch %d' % ( b + 1 )
     commands = []
@@ -57,17 +55,18 @@ for b in range( Nb ) :
         args_day += [ day ]
         commands += [ ( './x_merge_ts_files.py ' + '-m %e %s '*len(mergs) + tsdir + 'd%03d.pkl\n' ) % tuple( args_day ) ]
 
-    submitname = 'x_merge_tsss_b%03d.sub' % ( b + 1 )
+    submitname = 'x_merge_ts_files_b%03d.sub' % ( b + 1 )
     file = open( submitname , 'w' )
     file.writelines( [ '#!/bin/bash\n' ,
                        '#PBS -N %s\n' % submitname ,
+                       '#PBS -o x_merge_ts_files_b%03d.out\n' % ( b+1 ) ,
                        '#PBS -q compute\n' ,
                        '#PBS -j oe\n' ,
                        '#PBS -l nodes=1:ppn=1\n' ,
                        '#PBS -l walltime=5:00:00\n' ,
                        'cd $PBS_O_WORKDIR\n' ,
-                       '\n' ] + commands ) ; file.close()
-    
+                       '\n' ] + commands + [ 'echo done' ] ) ; file.close()
+    file = open( 'x_merge_ts_files_b%03d.out' % ( b+1 ) , 'w' ) ; file.write( 'dummpy output' ) ; file.close()
     os.system( 'qsub %s' % submitname )
 
 

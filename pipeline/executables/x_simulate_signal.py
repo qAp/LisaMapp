@@ -41,13 +41,7 @@ elif Ndays % Nb > 0 :
     days_batches = [ days[ b*Ndb : (b+1)*Ndb ] for b in range( Nb-1 ) ] + [ days[ (Nb-1)*Ndb : ] ]
 else :
     raise Exception , "Both the number of days and number of batches have to be postivie integer!"
-
-
  
-if tsdir not in glob.glob( tsdir ) :
-    os.system( 'mkdir -p %s' % tsdir ) 
-FIN = [] ; file = open( tsdir + '/x_simulate_signal_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
-
 for b in range( Nb ) :
     batch = b + 1
     days = days_batches[ b ]
@@ -60,15 +54,19 @@ for b in range( Nb ) :
     file.writelines( [ '#!/bin/bash\n' ,
                        '#PBS -N %s\n' % submitname ,
                        '#PBS -q compute\n' ,
+                       '#PBS -o x_P_to_TS_b%03d.out\n' % batch ,
                        '#PBS -j oe\n' ,
                        '#PBS -l nodes=1:ppn=1\n' ,
-                       '#PBS -l walltime=5:00:00\n' ,
+                       '#PBS -l walltime=10:00:00\n' ,
                        'cd $PBS_O_WORKDIR\n' ,
                        '\n' ,
-                       ( './x_P_to_TS.py ' + '-d%d '*len(days) + '--seed %d --GWslope %d --tditype %s --tdigen %s --whichtdi %s --lmax %d --stime %f --f0 %f --df %f --Nf %d %s %s %s' )
+                       ( './x_P_to_TS.py ' + '-d%d '*len(days) + '--seed %d --GWslope %d --tditype %s --tdigen %s --whichtdi %s --lmax %d --stime %f --f0 %f --df %f --Nf %d %s %s %s\n' )
                % tuple( days + [ setup['seed'] , setup['GWslope'] , setup['tditype'] , setup['tdigen'] , setup['whichtdi'] , setup['lmax'] , setup['stime'] ,
-                                 setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , tsdir ] ) ] )
+                                 setup['f0'] , setup['df'] , setup['Nf'] , setup['Ppath'] , setup['orfdir'] , tsdir ] ) ,
+                       '\n' ,
+                       'echo done' ] )
     file.close()
+    file = open( 'x_P_to_TS_b%03d.out' % batch , 'w' ) ; file.write( 'dummy output' ) ; file.close()
     print 'Submitting batch %d' % batch
     os.system( 'qsub %s' % submitname )
     print 'done'

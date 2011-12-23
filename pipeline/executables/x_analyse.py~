@@ -88,24 +88,24 @@ if options.do_X :
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Xdir = workdir + '/GW_slope_%d/%s/X/' % ( slope , IJ )
             cIJdir = workdir + '/GW_slope_%d/%s/cIJ/' % ( slope , IJ )
-#            os.system(
-#                ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d %s %s %s %s')
-#                % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] , setup['X']['lmax'] ,
-#                                  tsdir , orfIJdir , psddir , Xdir ] ) )
+
             submitname = 'x_pklX_slope_%d_IJ_%s.sub' % ( slope , IJ )
             file = open( submitname , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
-                               '#PBS -N %s\n' %submitname ,
+                               '#PBS -N %s\n' % submitname ,
+                               '#PBS -o x_pklX_slope_%d_IJ_%s.out\n' % ( slope , IJ ) ,
                                '#PBS -q compute\n' ,
                                '#PBS -j oe\n' ,
                                '#PBS -l nodes=1:ppn=1\n' ,
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s')
+                               ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n')
                                % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] ,
                                                  setup['X']['lmax'] , setup['X']['window'] ,
-                                                 tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ] ) ; file.close()
+                                                 tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ,
+                               'echo done' ] ) ; file.close()
+            file = open( 'x_pklX_slope_%d_IJ_%s.out' % ( slope , IJ ) , 'w' ) ; file.write( 'dummy output' ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
 
@@ -124,23 +124,23 @@ if options.do_G :
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Gdir = workdir + '/GW_slope_%d/%s/G/' % ( slope , IJ )
             cIIdir = workdir + '/GW_slope_%d/%s/cII/' % ( slope , IJ )            
-#            os.system(
-#                ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s')
-#                % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] , setup['G']['lmax'] ,
-#                                  tsdir , orfIJdir , psddir , Gdir ] ) )
+
             submitname = 'x_G_slope_%d_IJ_%s.sub' % ( slope , IJ )
             file = open( submitname , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
                                '#PBS -N %s\n' %submitname ,
+                               '#PBS -o x_G_slope_%d_IJ_%s.out\n' % ( slope , IJ ) , 
                                '#PBS -q compute\n' ,
                                '#PBS -j oe\n' ,
                                '#PBS -l nodes=1:ppn=1\n' ,
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s')
+                               ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n')
                                % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] , setup['G']['lmax'] ,
-                                                 setup['X']['window'] , tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ] ) ; file.close()
+                                                 setup['X']['window'] , tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ,
+                               'echo done' ] ) ; file.close()
+            file = open( 'x_G_slope_%d_IJ_%s.out' % ( slope , IJ ) , 'w' ) ; file.write( 'dummy output' ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
 
@@ -160,17 +160,17 @@ if options.do_S :
             print 'GWslope = %d , IJ = %s' % ( slope , IJ )
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Spath = workdir + '/GW_slope_%d/%s/S/S.pkl' % ( slope , IJ )            
-#            os.system( ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s' )
-#                       % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
-#                                         tsdir , csddir , orfIJdir , psddir , Spath ] ) )
+
             submitname = 'x_S_slope_%d_IJ_%s.sub' % ( slope , IJ )
             file = open( submitname , 'w' )
-            file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' %submitname , '#PBS -q compute\n' ,
-                               '#PBS -j oe\n' , '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=5:00:00\n' ,
+            file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' %submitname , '#PBS -o x_S_slope_%d_IJ_%s.out\n' % ( slope , IJ ) ,
+                               '#PBS -q compute\n' , '#PBS -j oe\n' , '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' , '\n' ,
-                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s' )
+                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n' )
                                % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
-                                                 setup['X']['window'] , tsdir , csddir , orfIJdir , psddir , Spath ] ) ] ) ; file.close()
+                                                 setup['X']['window'] , tsdir , csddir , orfIJdir , psddir , Spath ] ) ,
+                               'echo done' ] ) ; file.close()
+            file = open( 'x_S_slope_%d_IJ_%s.out' % ( slope , IJ ) ) ; file.write( 'dummy output' ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
 
 

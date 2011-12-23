@@ -75,7 +75,3 @@ if tsdir not in glob.glob( tsdir ) :
 print 'saving time-series to disk...'
 file = open( tspath , 'wb' ) ; cpkl.dump( tsdict , file , -1 ) ; file.close()
 
-file = open( tsdir + '/x_simulate_noise_for_days_FIN.pkl' , 'rb' ) ; FIN = cpkl.load( file ) ; file.close()
-FIN += [ 1 ]
-file = open( tsdir + '/x_simulate_noise_for_days_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
-
