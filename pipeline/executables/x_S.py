@@ -99,6 +99,6 @@ file = open( Spath , 'wb' ) ; cpkl.dump( Sdict , file , -1 ) ; file.close()
 
 days_skippedpath = Sdir + '/days_skipped.pkl'
 file = open( days_skippedpath , 'wb' ) ; cpkl.dump( days_skipped , file , -1 ) ; file.close()
-print 'done'
+
 
 

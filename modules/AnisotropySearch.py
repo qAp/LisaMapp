@@ -725,7 +725,6 @@ class XXX(object):
         f , integrand = self.getintegrand( flow , fhigh , lmax=lmax , window = window )
         data = np.sum( integrand.data , 1 )
         summand = Coarsable( data )
-        print 'done'
         return summand
 
 
@@ -1105,7 +1104,6 @@ class GGG(object):
 #        "~~"
         summand = Coarsable( data )
 
-        print 'done'
         return summand
 
 
