@@ -2,6 +2,7 @@
 import os
 import sys
 import glob
+import time
 import cPickle as cpkl
 from optparse import OptionParser
 
@@ -42,9 +43,21 @@ if options.do_psd :
     days = setup['psd']['days']
     segduration = setup['psd']['segduration']
     os.system( 'cp %s .' % ( execdir + 'x_pklTStoPSD.py' ) )
-    os.system( ( './x_pklTStoPSD.py ' + '-d%d '*len(days) +
-                 '--segduration %f --scale_ts %f %s %s' ) % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) )
-    print 'done'
+#    os.system( ( './x_pklTStoPSD.py ' + '-d%d '*len(days) +
+#                 '--segduration %f --scale_ts %f %s %s' ) % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) )
+    file = open( 'x_pklTStoPSD.sub' , 'w' )
+    file.writelines( [ '#!/bin/bash\n' ,
+                       '#PBS -N x_pklTStoPSD\n' ,
+                       '#PBS -o x_pklTStoPSD.out\n' , '#PBS -j oe\n' ,
+                       '#PBS -q compute\n' ,
+                       '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , '\n' ,
+                       'cd $PBS_O_WORKDIR\n' , '\n' ,
+                       ( './x_pklTStoPSD.py ' + '-d%d '*len(days) + '--segduration %f --scale_ts %f %s %s\n' )
+                       % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) ,
+                       '\n' ,
+                       "echo 'psd done'" ] ) ; file.close()  
+    file = open( 'x_pklTStoPSD.out' , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
+    print 'Submitting job for PSD estimation... ' ; os.system( 'qsub x_pklTStoPSD.sub' ) ; print 'done.'
     os.chdir( workdir )
 
 
@@ -63,15 +76,35 @@ if options.do_csd :
 
 
 if options.do_avgpsd :
-    print 'Averaging PSDs...'
     os.chdir( workdir )
     psddir = workdir + '/psd/'
+    print 'Waiting for PSD estimation...'
+    while True :
+        file = open( 'x_pklTStoPSD.out' , 'r' ) ; psddone = file.readlines()[-1] ; file.close()
+        if psddone == 'psd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Averaging PSDs...'
     avgpsddir = workdir + '/avgpsd/'
     days = setup['avgpsd']['days']
     os.system( 'cp %s .' % ( execdir + 'x_PSDtoAvgPSD.py' ) )
-    os.system( ('./x_PSDtoAvgPSD.py ' + '-d%d '*len(days) + '%s %s' )
-               % tuple( days + [ psddir , avgpsddir ] ) )
-    print 'done'
+    file = open( 'x_PSDtoAvgPSD.sub' , 'w' )
+    file.writelines( [ '#!/bin/bash\n' ,
+                       '#PBS -N x_PSDtoAvgPSD\n' ,
+                       '#PBS -o x_PSDtoAvgPSD.out\n' , '#PBS -j oe\n' ,
+                       '#PBS -q compute\n' ,
+                       '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , '\n' ,
+                       'cd $PBS_O_WORKDIR\n' , '\n' ,
+                       ('./x_PSDtoAvgPSD.py ' + '-d%d '*len(days) + '%s %s\n' )
+                       % tuple( days + [ psddir , avgpsddir ] ) , '\n' ,
+                       "echo 'avgpsd done'" ] ) ; file.close()
+    file = open( 'x_PSDtoAvgPSD.out' , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
+    print 'Submitting jobs for averaging PSDs...' ; os.system( 'qsub x_PSDtoAvgPSD.sub' ) ; print 'done.'
+#    os.system( ('./x_PSDtoAvgPSD.py ' + '-d%d '*len(days) + '%s %s' )
+#               % tuple( days + [ psddir , avgpsddir ] ) )
     os.chdir( workdir )
 
 
