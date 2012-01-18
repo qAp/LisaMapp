@@ -77,7 +77,6 @@ if options.do_csd :
 
 if options.do_avgpsd :
     os.chdir( workdir )
-    psddir = workdir + '/psd/'
     print 'Waiting for PSD estimation...'
     while True :
         file = open( 'x_pklTStoPSD.out' , 'r' ) ; psddone = file.readlines()[-1] ; file.close()
@@ -88,6 +87,7 @@ if options.do_avgpsd :
             time.sleep( 5 )
             continue
     print 'Averaging PSDs...'
+    psddir = workdir + '/psd/'
     avgpsddir = workdir + '/avgpsd/'
     days = setup['avgpsd']['days']
     os.system( 'cp %s .' % ( execdir + 'x_PSDtoAvgPSD.py' ) )
@@ -109,8 +109,17 @@ if options.do_avgpsd :
 
 
 if options.do_X :
-    print 'Calculating the dirty map...'
     os.chdir( workdir )
+    print 'Waiting for avgpsd...'
+    while True :
+        file = open( 'x_PSDtoAvgPSD.out' , 'r' ) ; avgpsddone = file.readlines()[-1] ; file.close()
+        if avgpsddone == 'avgpsd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Estimating X, the dirty map...'
     os.system( 'cp %s .' % ( execdir + '/x_pklX.py' ) )
     psddir = workdir + '/avgpsd/'
     orfdir = setup['X']['orfdir']
@@ -145,8 +154,17 @@ if options.do_X :
 
 
 if options.do_G :
-    print 'Calculating the Fisher matrix...'
     os.chdir( workdir )
+    print 'Waiting for avgpsd...'
+    while True :
+        file = open( 'x_PSDtoAvgPSD.out' , 'r' ) ; avgpsddone = file.readlines()[-1] ; file.close()
+        if avgpsddone == 'avgpsd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Estimating the Fisher matrix...'
     os.system( 'cp %s .' % ( execdir + '/x_G.py' ) )
     psddir = workdir + '/avgpsd/'
     orfdir = setup['G']['orfdir']
@@ -181,8 +199,17 @@ if options.do_G :
 
 
 if options.do_S :
-    print 'Calculating the bias matrix of the covariance of the Plm in the strong-signal limit...'
     os.chdir( workdir )
+    print 'Waiting for avgpsd...'
+    while True :
+        file = open( 'x_PSDtoAvgPSD.out' , 'r' ) ; avgpsddone = file.readlines()[-1] ; file.close()
+        if avgpsddone == 'avgpsd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Estimating the bias matrix of the covariance of the Plm in the strong-signal limit...'
     os.system( 'cp %s .' % ( execdir + '/x_S.py' ) )
     csddir = setup['S']['csddir']
     psddir = workdir + '/avgpsd/'
