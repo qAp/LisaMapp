@@ -2,7 +2,6 @@
 import os
 import sys
 import glob
-import time
 import cPickle as cpkl
 from optparse import OptionParser
 
@@ -444,42 +443,20 @@ if options.plot_singular_values :
 
 if options.do_temp_optimals :
     os.chdir( workdir )
+    
+    print 'Calculating optimal clean map and standard deviation from daily estimates...'
+    os.system( 'cp %s .' % ( execdir + 'x_temp_optimals.py' ) )
     for slope in setup['temp_optimals']['GWslopes'] :
         for IJ in setup['temp_optimals']['IJs'] :
-            jobname_do_PP = 'do_PP_slope_%d_IJ_%s' % ( slope , IJ )
-            jobname_do_stdPP = 'do_stdPP_slope_%d_IJ_%s' % ( slope , IJ )
-            jobname_x_S = 'x_S_slope_%d_IJ_%s' % ( slope , IJ )
-            print 'Waiting for do_PP, do_stdPP and x_S to finish for lope_%d IJ_%s...' % ( slope , IJ )
-            while True :
-                files = [ open( '%s.out' % jobname , 'r' ) for jobname
-                          in [ jobname_do_PP , jobname_do_stdPP , jobname_x_S ] ]
-                dones = [ file.readlines()[-1] for file in files ]
-                [ file.close() for file in files ]
-                if dones == [ 'do_PP done\n' , 'do_stdPP done\n' , 'done\n' ] :
-                    print 'done' ; break
-                else :
-                    time.sleep( 5 ) ; continue
-            print 'Calculating optimal clean map and standard deviation from daily estimates...'                    
-            os.system( 'cp %s .' % ( execdir + '/x_temp_optimals.py' ) )
+            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
             PPdir = workdir + '/GW_slope_%d/%s/PP' % ( slope , IJ )
             stdPPdir = workdir + '/GW_slope_%d/%s/stdPP' % ( slope , IJ )
             SSdir = workdir + '/GW_slope_%d/%s/SS' % ( slope , IJ )
             sumdir = workdir + '/GW_slope_%d/%s/optimals/summary_lmax_%d.pkl' % ( slope , IJ , setup['temp_optimals']['lmax'] )
-            jobname = 'do_optimals_slope_%d_IJ_%s' % ( slope , IJ )
-            file = open( '%s.sub' % jobname , 'w' )
-            file.writelines( [ '#!/bin/bash\n' ,
-                               '#PBS -N %s\n' % jobname ,
-                               '#PBS -o %s.out\n' % jobname , '#PBS -j oe\n' ,
-                               '#PBS -q compute\n' ,
-                               '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , '\n' , 
-                               'cd $PBS_O_WORKDIR\n' , '\n' ,
-                               ( './x_temp_optimals.py ' + '-d%d '*len(setup['temp_optimals']['days'])
-                                 + '--lmax %d %s %s %s %s\n' ) %
-                               tuple( setup['temp_optimals']['days'] + [ setup['temp_optimals']['lmax'] ,
-                                          PPdir , stdPPdir , SSdir , sumdir ] ) ,
-                               '\n' , "echo 'do_temp_optimals done'" ] ) ; file.close()
-            file = open( '%s.out' % jobname , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
-            print 'Submitting job for %s...' % jobname ; os.system( 'qsub %s.sub' % jobname ) ; print 'done.'
+            os.system( ( './x_temp_optimals.py ' + '-d%d '*len(setup['temp_optimals']['days']) + '--lmax %d %s %s %s %s' ) %
+                       tuple( setup['temp_optimals']['days'] + [ setup['temp_optimals']['lmax'] , PPdir , stdPPdir , SSdir , sumdir ] ) ) ; print 'done'
+
+
     os.chdir( workdir )
 
 
