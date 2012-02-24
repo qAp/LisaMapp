@@ -91,7 +91,7 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
         w , V = sp_linalg.eig( C )
         for ww in w :
             if ww < 0 :
-                "Negative Eigenvalue, trying to simulate unphysical signal!"
+                print "Negative Eigenvalue, trying to simulate unphysical signal!"
         ntilde_p[ :,k ] =  np.conj( np.sqrt( N / (2*stime) ) * np.dot( V , np.dot( np.sqrt( np.diag( w ) ) , zs[ :,k ] ) ) )
     
     zerofill = np.zeros( ( Nts , 1 ) )

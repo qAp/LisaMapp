@@ -79,7 +79,13 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
     stime = 1 / ( N*df )
     t = inittime + stime * np.arange( N )
 
-    np.random.seed( seed )
+    if seed == 'none' :
+        pass
+    elif seed == 'random' :
+        np.random.seed( None )
+    else :
+        np.random.seed( seed )
+        
     zs = np.array( [ ( np.random.standard_normal((Nf,)) + 1j * np.random.standard_normal((Nf,)) ) / np.sqrt(2)
                      for i in range( Nts ) ] )
 
