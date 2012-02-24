@@ -17,9 +17,6 @@ parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' ,
 parser.add_option( '--stime' , action='store' , dest='stime' , type='string' , nargs=1 , default='1.' ,
                    help='Sampling time [s]' )
 
-parser.add_option( '--number_batches' , action='store' , dest='Nb' , type='int' , nargs=1 , default=1 ,
-                   help='Number of batches to divide the days into' )
-
 parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='None' ,
                    help='Seed for the random number generator in numpy.random' )
 
@@ -32,40 +29,24 @@ else :
     tsdir = args[0]
 
 dayinsecs = 86400.
+#Work out Nf for getting the number of random numbers drawn
+N = np.round( dayinsecs / stime )
+if N % 2 == 0 :
+    Nf = int( N/2 - 1 ) 
+else :
+    Nf = int( ( N-1 ) / 2 )
 
 if options.days == None :
     print 'No days are selected.  Nothing to do.' ; sys.exit()
-else :
-    Ndays = len( options.days )
-    if Ndays % options.Nb == 0 :
-        Ndb = Ndays / options.Nb
-        days_batches = [ options.days[ b*Ndb : (b+1)*Ndb  ]  for b in range( options.Nb ) ]
-    elif Ndays % options.Nb > 0 :
-        Ndb = Ndays / ( options.Nb-1 )
-        Ndbl = Ndays % ( options.Nb-1 )
-        days_batches = [ options.days[ b*Ndb : (b+1)*Ndb ] for b in range( options.Nb-1 ) ] + [ options.days[ (options.Nb-1)*Ndb : ] ]
-    else :
-        raise Exception , "Both the number of days and number of batches have to be postivie integer!"
 
-for b in range( options.Nb ) :
-    batch = b + 1
-    print "~~~~~~~~~~~~~~~~ Processing batch %d ~~~" % batch
-
-    if days_batches[b] == [] :
-        print 'No days in this batch.  Nothing to do...' ; sys.exit()
+for day in options.days :
+    inittime = ( day - 1 )*dayinsecs
+    if options.seed = 'random' :
+        os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , day ) )
     else :
-        if options.seed == 'None' :
-            commands = [ ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %s ' + tsdir + '/d%03d.pkl\n' )
-                         % ( dayinsecs*(day-1) , options.stime , dayinsecs , options.seed , day ) for day in days_batches[b] ]
-        else :
-            seed = int( options.seed )
-            commands = [ ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %d ' + tsdir + '/d%03d.pkl\n' )
-                         % ( dayinsecs*(day-1) , options.stime , dayinsecs , int( options.seed ) + day , day ) for day in days_batches[b] ]
-        submitname = 'x_simulate_noise_for_days_b%03d.sub' % batch
-        file = open( submitname , 'w' )
-        file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' % submitname , '#PBS -j oe\n' , '#PBS -q compute\n' ,
-                           '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , 
-                           'cd $PBS_O_WORKDIR\n' , '\n' ] +
-                         commands ) ; file.close()
-        print 'Submitting batch %d ...' % batch
-        os.system( 'qsub %s' % submitname ) ; print 'done'
+        np.random.seed( options.seed )
+        #draw preceeding random numbers first
+        np.random.standard_normal( (day - 1)*Nf*2*Nts ) ;
+        os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , day ) )
+
+
