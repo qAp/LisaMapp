@@ -28,9 +28,6 @@ if len( args ) < 1 :
 else :
     tsdir = args[0]
 
-#Number of time-series output by x_simulate_stationary_noise.py (<--Need to look at)
-Nts = 3
-
 dayinsecs = 86400.
 #Work out Nf for getting the number of random numbers drawn
 N = np.round( dayinsecs / stime )
