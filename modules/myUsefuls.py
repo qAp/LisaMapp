@@ -49,7 +49,7 @@ def get_noise_freq_domain_1NSD( P , df , inittime , parityN , seed ) :
     return t , n
 
 
-def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed ) :
+def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed='none' , N_previous_draws=0 ) :
     """
     returns the noise time-series given their covariance matrix
     INPUT:
@@ -58,7 +58,8 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
     df --- frequency resolution
     inittime --- initial time of the noise time-series
     parityN --- is the length of the time-series 'Odd' or 'Even'
-    seed --- seed for the noise
+    seed --- seed for the random number generator
+    N_previous_draws --- number of random number draws to discard first 
     OUPUT:
     t --- time [s]
     n --- noise time-series, Nts x N numpy array
@@ -80,15 +81,18 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
     t = inittime + stime * np.arange( N )
 
     if seed == 'none' :
+        print 'Not setting the seed for np.random.standard_normal()'
         pass
     elif seed == 'random' :
         np.random.seed( None )
     else :
-        np.random.seed( seed )
-        
+        np.random.seed( int( seed ) )
+
+    np.random.standard_normal( N_previous_draws ) ;
+
     zs = np.array( [ ( np.random.standard_normal((Nf,)) + 1j * np.random.standard_normal((Nf,)) ) / np.sqrt(2)
                      for i in range( Nts ) ] )
-
+#    print np.real( zs[ 0 ] )
     ntilde_p = np.zeros( ( Nts , Nf ) , dtype=complex )
     for k in range( Nf ) :
         C = comatrix[ :,:,k ]

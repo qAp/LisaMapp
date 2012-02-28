@@ -3,10 +3,13 @@ import os
 import sys
 import glob
 import optparse
+import numpy as np
 
 usage = """
 %prog TSDIR\n
 TSDIR --- name of directory in which to save the noise time-series files
+Comment:\n
+This executable needs to be used together with noise-simulating executable, like x_simulate_stationary_noise.py
 """
 
 parser = optparse.OptionParser( usage = usage )
@@ -17,7 +20,7 @@ parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' ,
 parser.add_option( '--stime' , action='store' , dest='stime' , type='string' , nargs=1 , default='1.' ,
                    help='Sampling time [s]' )
 
-parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='None' ,
+parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='random' ,
                    help='Seed for the random number generator in numpy.random' )
 
 ( options , args ) = parser.parse_args()
@@ -33,7 +36,7 @@ Nts = 3
 
 dayinsecs = 86400.
 #Work out Nf for getting the number of random numbers drawn
-N = np.round( dayinsecs / stime )
+N = np.round( dayinsecs / float( options.stime ) )
 if N % 2 == 0 :
     Nf = int( N/2 - 1 ) 
 else :
@@ -43,13 +46,13 @@ if options.days == None :
     print 'No days are selected.  Nothing to do.' ; sys.exit()
 
 for day in options.days :
+    print 'day %d' % day
     inittime = ( day - 1 )*dayinsecs
-    if options.seed = 'random' :
-        os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , day ) )
+    if options.seed == 'random' :
+        os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %s ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , options.seed , day ) )
     else :
-        np.random.seed( options.seed )
-        #draw preceeding random numbers first
-        np.random.standard_normal( (day - 1)*Nf*2*Nts ) ;
-        os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , day ) )
+        #Number of random numbers drawn before this day, starting from day 1
+        N_previous_draws = (day - 1)*Nf*2*Nts
+        os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %s --N_previous_draws %d ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , options.seed , N_previous_draws , day ) )
 
 

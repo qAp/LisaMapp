@@ -3,6 +3,7 @@ import os
 import sys
 import glob
 import optparse
+import numpy as np
 
 usage = """
 %prog TSDIR\n
@@ -17,7 +18,7 @@ parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' ,
 parser.add_option( '--stime' , action='store' , dest='stime' , type='string' , nargs=1 , default='1.' ,
                    help='Sampling time [s]' )
 
-parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='None' ,
+parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='random' ,
                    help='Seed for the random number generator in numpy.random' )
 
 ( options , args ) = parser.parse_args()
@@ -28,9 +29,12 @@ if len( args ) < 1 :
 else :
     tsdir = args[0]
 
+#Number of time-series output by x_simulate_stationary_noise.py (<--Need to look at)
+Nts = 3
+
 dayinsecs = 86400.
 #Work out Nf for getting the number of random numbers drawn
-N = np.round( dayinsecs / stime )
+N = np.round( dayinsecs / float( options.stime ) )
 if N % 2 == 0 :
     Nf = int( N/2 - 1 ) 
 else :
@@ -40,13 +44,16 @@ if options.days == None :
     print 'No days are selected.  Nothing to do.' ; sys.exit()
 
 for day in options.days :
+    print 'day %d' % day
     inittime = ( day - 1 )*dayinsecs
-    if options.seed = 'random' :
+    if options.seed == 'random' :
         os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , day ) )
     else :
-        np.random.seed( options.seed )
+        print int( options.seed )
+        np.random.seed( int( options.seed ) )
         #draw preceeding random numbers first
         np.random.standard_normal( (day - 1)*Nf*2*Nts ) ;
+        print np.random.standard_normal( Nf )
         os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , day ) )
 
 
