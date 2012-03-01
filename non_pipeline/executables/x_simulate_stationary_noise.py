@@ -38,8 +38,10 @@ parser.add_option( '--duration' , action='store' , dest='duration' , type='strin
 parser.add_option( '--inittime' , action='store' , dest='inittime' , type='string' , nargs=1 , default='0.' ,
                    help='Initial time [s]' )
 
-parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='None' ,
-                   help='Seed of random number generator in numpy.random()' )
+parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='random' , help='Seed for random number generation' )
+
+parser.add_option( '--N_previous_draws' , action='store' , dest='N_previous_draws' , type='string' , nargs=1 , default='0' , help='Number of draws to discard first' )
+
 
 ( options , args ) = parser.parse_args()
 if len( args ) < 1 :
@@ -47,12 +49,8 @@ if len( args ) < 1 :
 else :
     tspath = args[ 0 ] ; tsdir = os.path.dirname( tspath )
 
-stime , duration , inittime = float(options.stime) , float(options.duration) , float(options.inittime)
-if options.seed == 'None' :
-    seed = None
-else:
-    seed = int( options.seed )
-print seed
+stime , duration , inittime , N_previous_draws = float(options.stime) , float(options.duration) , float(options.inittime) , int( options.N_previous_draws )
+
 N = np.round( duration / stime )
 if N % 2 == 0 :
     Nf = int( N/2 - 1 ) ; parityN = 'Even'
@@ -64,7 +62,7 @@ f = df * np.arange( 1 , Nf + 1 )
 
 comatrix = get_comatrix( f )
 
-t , n = mufls.get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed ) 
+t , n = mufls.get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , options.seed , N_previous_draws ) 
 
 tscale = { 'Cadence1':stime , 'Offset1':inittime }
 tsdict = { 't':AS.Coarsable( t , **tscale ) , 
