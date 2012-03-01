@@ -6,7 +6,7 @@ import glob
 days = range( 1 , 10+1 )
 stime = 8640.
 Nb = 2
-seed = 99 #This can be 'random', or a positive integer
+seed = 99 #This can be 'random', or a 'positive integer' ( as in a integer in a string.)
 tsdir = 'data_tr1'
 
 
@@ -32,7 +32,7 @@ for b in range( Nb ) :
     if days_batches[ b ] == [] :
         print 'No days in this batch.  Nothing to do...' ; sys.exit()
     else :
-        commands = [ ('./x_simulate_noise_for_days.py -d%d --stime %f --seed %d %s\n') %
+        commands = [ ('./x_simulate_noise_for_days.py -d%d --stime %f --seed %s %s\n') %
                      ( day , stime , seed , tsdir ) for day in days_batches[ b ] ]
         submitname = 'x_simulate_noise_for_days_b%03d' % batch
         file = open( submitname + '.sub' , 'w' )
