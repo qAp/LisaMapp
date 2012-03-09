@@ -92,7 +92,7 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
 
     zs = np.array( [ ( np.random.standard_normal((Nf,)) + 1j * np.random.standard_normal((Nf,)) ) / np.sqrt(2)
                      for i in range( Nts ) ] )
-#    print np.real( zs[ 0 ] )
+
     ntilde_p = np.zeros( ( Nts , Nf ) , dtype=complex )
     for k in range( Nf ) :
         C = comatrix[ :,:,k ]
