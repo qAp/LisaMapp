@@ -3,9 +3,11 @@ import os
 import sys
 import glob
 import optparse
+<<<<<<< HEAD
 import cPickle as cpkl
+=======
 import numpy as np
-
+>>>>>>> seed_fix
 
 usage = """
 %prog TSDIR\n
@@ -58,4 +60,26 @@ for day in options.days :
         os.system( ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %s --N_previous_draws %d ' + tsdir + '/d%03d.pkl\n' ) % ( inittime , options.stime , dayinsecs , options.seed , N_previous_draws , day ) )
 
 
-
+<<<<<<< HEAD
+    if days_batches[b] == [] :
+        print 'No days in this batch.  Nothing to do...' ; sys.exit()
+    else :
+        if options.seed == 'None' :
+            commands = [ ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %s ' + tsdir + '/d%03d.pkl\n' )
+                         % ( dayinsecs*(day-1) , options.stime , dayinsecs , options.seed , day ) for day in days_batches[b] ]
+        else :
+            seed = int( options.seed )
+            commands = [ ( './x_simulate_stationary_noise.py --inittime %f --stime %s --duration %f --seed %d ' + tsdir + '/d%03d.pkl\n' )
+                         % ( dayinsecs*(day-1) , options.stime , dayinsecs , int( options.seed ) + (day-1)*1 , day ) for day in days_batches[b] ]
+        submitname = 'x_simulate_stationary_noise_b%03d.sub' % batch
+        file = open( submitname , 'w' )
+        file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' % submitname , '#PBS -o x_simulate_stationary_noise_b%03d.out\n' % batch ,
+                           '#PBS -j oe\n' , '#PBS -q compute\n' ,
+                           '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , 
+                           'cd $PBS_O_WORKDIR\n' , '\n' ] +
+                         commands + [ 'echo done' ] ) ; file.close()
+        file = open( 'x_simulate_stationary_noise_b%03d.out' % batch , 'w' ) ; file.write( 'dummpy output' ) ; file.close()
+        print 'Submitting batch %d ...' % batch
+        os.system( 'qsub %s' % submitname ) ; print 'done'
+=======
+>>>>>>> seed_fix

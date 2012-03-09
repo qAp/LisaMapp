@@ -46,11 +46,11 @@ if len( args ) < 5 :
 
 tsdir , orfdir , psddir , Xdir , cIJdir = args[ :5 ]
 
+
 Xpath = Xdir + '/X.pkl'
 
 if cIJdir not in glob.glob( cIJdir ) :
     os.system( 'mkdir -p %s' % cIJdir )
-
 
 firstavailable = True ; days_skipped = []
 for day in options.days :
@@ -85,7 +85,7 @@ for day in options.days :
 
     if firstavailable :
         X = np.zeros( np.shape(XX.data) , complex )
-        print 'normalise for coarsegraining and windowing with a Hanning window for both time-series'
+        print 'Calculating normalisation factor due to coarsegraining and windowing'
         N = xxx.ts.t.data.shape[0] ; T = xxx.ts.t.Cadence1 * N ; df = xxx.fcoarse.Cadence1
         if options.window == 'None' :
             window = np.ones( N )
@@ -113,6 +113,11 @@ file = open( Xpath , 'wb') ; cpkl.dump( map_X , file , -1 ) ; file.close()
 
 days_skippedpath = Xdir + 'days_skipped.pkl'
 file = open( days_skippedpath , 'wb' ) ; cpkl.dump( days_skipped , file , -1 ) ; file.close()
+
+file = open( Xdir + '/x_pklX_FIN.pkl' , 'rb' ) ; FIN = cpkl.load( file ) ; file.close()
+FIN += [ 1 ] ; file = open( Xdir + '/x_pklX_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
+
+
 
 
 

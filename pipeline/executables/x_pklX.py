@@ -46,11 +46,11 @@ if len( args ) < 5 :
 
 tsdir , orfdir , psddir , Xdir , cIJdir = args[ :5 ]
 
+
 Xpath = Xdir + '/X.pkl'
 
 if cIJdir not in glob.glob( cIJdir ) :
     os.system( 'mkdir -p %s' % cIJdir )
-
 
 firstavailable = True ; days_skipped = []
 for day in options.days :
@@ -113,6 +113,9 @@ file = open( Xpath , 'wb') ; cpkl.dump( map_X , file , -1 ) ; file.close()
 
 days_skippedpath = Xdir + 'days_skipped.pkl'
 file = open( days_skippedpath , 'wb' ) ; cpkl.dump( days_skipped , file , -1 ) ; file.close()
+
+
+
 
 
 

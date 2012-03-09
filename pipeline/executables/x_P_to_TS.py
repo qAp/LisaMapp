@@ -148,9 +148,7 @@ for day in options.days :
 
     if tsdir not in glob.glob( tsdir ) :
         os.system( 'mkdir -p %s' % tsdir )
-    file = open( tsdir + 'd%03d.pkl' % day , 'wb' ) ; cpkl.dump( tsdict , file , -1 ) ; file.close()
-
-
+    file = open( tsdir + '/d%03d.pkl' % day , 'wb' ) ; cpkl.dump( tsdict , file , -1 ) ; file.close()
 
 
 

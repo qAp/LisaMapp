@@ -2,6 +2,7 @@
 import os
 import sys
 import glob
+import time
 import cPickle as cpkl
 from optparse import OptionParser
 
@@ -42,9 +43,21 @@ if options.do_psd :
     days = setup['psd']['days']
     segduration = setup['psd']['segduration']
     os.system( 'cp %s .' % ( execdir + 'x_pklTStoPSD.py' ) )
-    os.system( ( './x_pklTStoPSD.py ' + '-d%d '*len(days) +
-                 '--segduration %f --scale_ts %f %s %s' ) % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) )
-    print 'done'
+#    os.system( ( './x_pklTStoPSD.py ' + '-d%d '*len(days) +
+#                 '--segduration %f --scale_ts %f %s %s' ) % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) )
+    file = open( 'x_pklTStoPSD.sub' , 'w' )
+    file.writelines( [ '#!/bin/bash\n' ,
+                       '#PBS -N x_pklTStoPSD\n' ,
+                       '#PBS -o x_pklTStoPSD.out\n' , '#PBS -j oe\n' ,
+                       '#PBS -q compute\n' ,
+                       '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , '\n' ,
+                       'cd $PBS_O_WORKDIR\n' , '\n' ,
+                       ( './x_pklTStoPSD.py ' + '-d%d '*len(days) + '--segduration %f --scale_ts %f %s %s\n' )
+                       % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) ,
+                       '\n' ,
+                       "echo 'psd done'" ] ) ; file.close()  
+    file = open( 'x_pklTStoPSD.out' , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
+    print 'Submitting job for PSD estimation... ' ; os.system( 'qsub x_pklTStoPSD.sub' ) ; print 'done.'
     os.chdir( workdir )
 
 
@@ -63,21 +76,50 @@ if options.do_csd :
 
 
 if options.do_avgpsd :
-    print 'Averaging PSDs...'
     os.chdir( workdir )
+    print 'Waiting for PSD estimation...'
+    while True :
+        file = open( 'x_pklTStoPSD.out' , 'r' ) ; psddone = file.readlines()[-1] ; file.close()
+        if psddone == 'psd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Averaging PSDs...'
     psddir = workdir + '/psd/'
     avgpsddir = workdir + '/avgpsd/'
     days = setup['avgpsd']['days']
     os.system( 'cp %s .' % ( execdir + 'x_PSDtoAvgPSD.py' ) )
-    os.system( ('./x_PSDtoAvgPSD.py ' + '-d%d '*len(days) + '%s %s' )
-               % tuple( days + [ psddir , avgpsddir ] ) )
-    print 'done'
+    file = open( 'x_PSDtoAvgPSD.sub' , 'w' )
+    file.writelines( [ '#!/bin/bash\n' ,
+                       '#PBS -N x_PSDtoAvgPSD\n' ,
+                       '#PBS -o x_PSDtoAvgPSD.out\n' , '#PBS -j oe\n' ,
+                       '#PBS -q compute\n' ,
+                       '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , '\n' ,
+                       'cd $PBS_O_WORKDIR\n' , '\n' ,
+                       ('./x_PSDtoAvgPSD.py ' + '-d%d '*len(days) + '%s %s\n' )
+                       % tuple( days + [ psddir , avgpsddir ] ) , '\n' ,
+                       "echo 'avgpsd done'" ] ) ; file.close()
+    file = open( 'x_PSDtoAvgPSD.out' , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
+    print 'Submitting jobs for averaging PSDs...' ; os.system( 'qsub x_PSDtoAvgPSD.sub' ) ; print 'done.'
+#    os.system( ('./x_PSDtoAvgPSD.py ' + '-d%d '*len(days) + '%s %s' )
+#               % tuple( days + [ psddir , avgpsddir ] ) )
     os.chdir( workdir )
 
 
 if options.do_X :
-    print 'Calculating the dirty map...'
     os.chdir( workdir )
+    print 'Waiting for avgpsd...'
+    while True :
+        file = open( 'x_PSDtoAvgPSD.out' , 'r' ) ; avgpsddone = file.readlines()[-1] ; file.close()
+        if avgpsddone == 'avgpsd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Estimating X, the dirty map...'
     os.system( 'cp %s .' % ( execdir + '/x_pklX.py' ) )
     psddir = workdir + '/avgpsd/'
     orfdir = setup['X']['orfdir']
@@ -88,32 +130,41 @@ if options.do_X :
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Xdir = workdir + '/GW_slope_%d/%s/X/' % ( slope , IJ )
             cIJdir = workdir + '/GW_slope_%d/%s/cIJ/' % ( slope , IJ )
-#            os.system(
-#                ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d %s %s %s %s')
-#                % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] , setup['X']['lmax'] ,
-#                                  tsdir , orfIJdir , psddir , Xdir ] ) )
+
             submitname = 'x_pklX_slope_%d_IJ_%s.sub' % ( slope , IJ )
             file = open( submitname , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
-                               '#PBS -N %s\n' %submitname ,
+                               '#PBS -N %s\n' % submitname ,
+                               '#PBS -o x_pklX_slope_%d_IJ_%s.out\n' % ( slope , IJ ) ,
                                '#PBS -q compute\n' ,
                                '#PBS -j oe\n' ,
                                '#PBS -l nodes=1:ppn=1\n' ,
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s')
+                               ( './x_pklX.py ' + '-d%d '*len(days) + '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n')
                                % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] , setup['X']['fhigh'] ,
                                                  setup['X']['lmax'] , setup['X']['window'] ,
-                                                 tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ] ) ; file.close()
+                                                 tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ,
+                               'echo done' ] ) ; file.close()
+            file = open( 'x_pklX_slope_%d_IJ_%s.out' % ( slope , IJ ) , 'w' ) ; file.write( 'dummy output' ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
 
 
 
 if options.do_G :
-    print 'Calculating the Fisher matrix...'
     os.chdir( workdir )
+    print 'Waiting for avgpsd...'
+    while True :
+        file = open( 'x_PSDtoAvgPSD.out' , 'r' ) ; avgpsddone = file.readlines()[-1] ; file.close()
+        if avgpsddone == 'avgpsd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Estimating the Fisher matrix...'
     os.system( 'cp %s .' % ( execdir + '/x_G.py' ) )
     psddir = workdir + '/avgpsd/'
     orfdir = setup['G']['orfdir']
@@ -124,23 +175,23 @@ if options.do_G :
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Gdir = workdir + '/GW_slope_%d/%s/G/' % ( slope , IJ )
             cIIdir = workdir + '/GW_slope_%d/%s/cII/' % ( slope , IJ )            
-#            os.system(
-#                ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s')
-#                % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] , setup['G']['lmax'] ,
-#                                  tsdir , orfIJdir , psddir , Gdir ] ) )
+
             submitname = 'x_G_slope_%d_IJ_%s.sub' % ( slope , IJ )
             file = open( submitname , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
                                '#PBS -N %s\n' %submitname ,
+                               '#PBS -o x_G_slope_%d_IJ_%s.out\n' % ( slope , IJ ) , 
                                '#PBS -q compute\n' ,
                                '#PBS -j oe\n' ,
                                '#PBS -l nodes=1:ppn=1\n' ,
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
-                               ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s')
+                               ( './x_G.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n')
                                % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] , setup['G']['lmax'] ,
-                                                 setup['X']['window'] , tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ] ) ; file.close()
+                                                 setup['X']['window'] , tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ,
+                               'echo done' ] ) ; file.close()
+            file = open( 'x_G_slope_%d_IJ_%s.out' % ( slope , IJ ) , 'w' ) ; file.write( 'dummy output' ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
     os.chdir( workdir )
 
@@ -148,8 +199,17 @@ if options.do_G :
 
 
 if options.do_S :
-    print 'Calculating the bias matrix of the covariance of the Plm in the strong-signal limit...'
     os.chdir( workdir )
+    print 'Waiting for avgpsd...'
+    while True :
+        file = open( 'x_PSDtoAvgPSD.out' , 'r' ) ; avgpsddone = file.readlines()[-1] ; file.close()
+        if avgpsddone == 'avgpsd done\n' :
+            print 'done.'
+            break
+        else :
+            time.sleep( 5 )
+            continue
+    print 'Estimating the bias matrix of the covariance of the Plm in the strong-signal limit...'
     os.system( 'cp %s .' % ( execdir + '/x_S.py' ) )
     csddir = setup['S']['csddir']
     psddir = workdir + '/avgpsd/'
@@ -160,17 +220,17 @@ if options.do_S :
             print 'GWslope = %d , IJ = %s' % ( slope , IJ )
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Spath = workdir + '/GW_slope_%d/%s/S/S.pkl' % ( slope , IJ )            
-#            os.system( ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d %s %s %s %s %s' )
-#                       % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
-#                                         tsdir , csddir , orfIJdir , psddir , Spath ] ) )
+
             submitname = 'x_S_slope_%d_IJ_%s.sub' % ( slope , IJ )
             file = open( submitname , 'w' )
-            file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' %submitname , '#PBS -q compute\n' ,
-                               '#PBS -j oe\n' , '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=5:00:00\n' ,
+            file.writelines( [ '#!/bin/bash\n' , '#PBS -N %s\n' %submitname , '#PBS -o x_S_slope_%d_IJ_%s.out\n' % ( slope , IJ ) ,
+                               '#PBS -q compute\n' , '#PBS -j oe\n' , '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' , '\n' ,
-                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s' )
+                               ( './x_S.py ' + '-d%d '*len(days) + '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n' )
                                % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] , setup['S']['lmax'] ,
-                                                 setup['X']['window'] , tsdir , csddir , orfIJdir , psddir , Spath ] ) ] ) ; file.close()
+                                                 setup['X']['window'] , tsdir , csddir , orfIJdir , psddir , Spath ] ) ,
+                               'echo done' ] ) ; file.close()
+            file = open( 'x_S_slope_%d_IJ_%s.out' % ( slope , IJ ) , 'w' ) ; file.write( 'dummy output' ) ; file.close()
             print 'Submitting job' ; os.system( 'qsub %s' % submitname ) ; print 'done'
 
 

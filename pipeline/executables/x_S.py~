@@ -74,7 +74,7 @@ for day in options.days :
         fcoarse = AS.coarsefrequency( orf.f , psddict['f'] , csddict['f'] ) ; df = fcoarse.Cadence1
         if options.window == 'None' :
             window = np.ones( N )
-        elif options.window == 'hanning'
+        elif options.window == 'hanning' :
             window = np.hanning( N )
         norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df        
         firstavailable = False

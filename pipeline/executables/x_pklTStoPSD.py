@@ -4,9 +4,8 @@ import glob
 import sys
 import cPickle as cpkl
 import AnisotropySearch as AS
-import pylab as pl
 import optparse
-
+import mymlab
 
 
 parser = optparse.OptionParser( 'Usage: ./x_pklTStoPSD.py TSDIR PSDDIR' )
@@ -58,9 +57,9 @@ for day in options.days :
 
     nfft = int( options.segduration / stime ) ; noverlap = nfft / 2 ; fs = 1. / stime
 
-    P11data , fdata = pl.psd( n1 , nfft , fs , noverlap = noverlap )
-    P22data , fdata = pl.psd( n2 , nfft , fs , noverlap = noverlap )
-    P33data , fdata = pl.psd( n3 , nfft , fs , noverlap = noverlap )
+    P11data , fdata = mymlab.psd( n1 , nfft , fs , noverlap = noverlap )
+    P22data , fdata = mymlab.psd( n2 , nfft , fs , noverlap = noverlap )
+    P33data , fdata = mymlab.psd( n3 , nfft , fs , noverlap = noverlap )
 
     f0 = fdata[0] ; df = fdata[1] - fdata[0] ; fscale = { 'Offset1':f0 , 'Cadence1':df }
     f = AS.Coarsable( fdata , **fscale )
