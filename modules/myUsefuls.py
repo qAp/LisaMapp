@@ -12,6 +12,22 @@ Non-LISA-specific routines
 
 
 def get_freqs_from_duration_and_stime( stime , duration ) :
+    """
+    Returns the positive frequencies (without DC and Nyquist) of the
+    Fourier transform of a time-series with some given duration and stime.
+    INPUT:
+    stime --- sampling time [s]
+    duration --- desired duration of time-series [s]
+    OUTPUT:
+    freqdict --- dictionary with the following fields:
+    N --- number of samples in the time-series
+    dt --- sampling time
+    T --- duration of time-series
+    parityN --- Whether N is an even or odd number
+    Nf --- number of positive frequencies (without DC and Nyquist) of F.T
+    df --- frequency resolution of the Fourier transform (F.T)
+    f --- numpy array containing these frequencies
+    """
     N = np.round( duration / stime )
     df = 1 / ( N * stime )
     if N % 2 == 0 :

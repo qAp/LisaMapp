@@ -11,6 +11,19 @@ Non-LISA-specific routines
 """
 
 
+def get_freqs_from_duration_and_stime( stime , duration ) :
+    N = np.round( duration / stime )
+    df = 1 / ( N * stime )
+    if N % 2 == 0 :
+        Nf = int( N/2 - 1 ) ; parityN = 'Even'
+    else :
+        Nf = int( (N-1) / 2 ) ; parityN = 'Odd'
+    f = df * np.range( 1 , Nf + 1 )
+    freqdict = { 'N':N , 'dt':stime , 'T':N*stime , 'parityN':parityN ,
+                 'Nf':Nf , 'df':df , 'f':f }
+    return freqdict
+
+
 
 def get_noise_freq_domain_1NSD( P , df , inittime , parityN , seed ) :
     """
