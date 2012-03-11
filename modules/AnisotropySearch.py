@@ -2084,38 +2084,6 @@ class ShortTermFT( object ):
         return
 
 
-def get_CovarMatrix( Nvar , Ppath , GWSpectralSlope=-3 , *orfpaths ) :
-    """
-    Returns Nvar x Nvar x Nf covariance matrix from convolving ORF with Plm
-    It computes all independent P_{IJ}(f) = H(f)\gamma_{\alpha}^{IJ}(f)P_{\alpha}, and then forms the whole covariance matrix
-    INPUT:
-    Nvar --- number of variables of covariance matrix (if only A and E, Nvar=2)
-    Ppath --- file path to the SkyMap object describing the P_{lm}s
-    GWSpectralSlope --- gravitational wave background spectral slope
-    *orfpaths --- file paths to the tdiORF_SpHs of the independent cross-correlations
-    OUTPUT:
-    f --- frequencies ( Nfx1 numpy array )
-    comatrix --- covariance matrix ( Nvar x Nvar x  Nf numpy array )
-    """
-    Nindies = int( Nvar * ( Nvar + 1 ) / 2 )
-    if Nindies != len( orfpaths ) :
-        raise Exception , 'The covariance matrix %d x %d.  Please make sure that there are %d orfpaths' % ( Nvar , Nvar , Nindies )
-    orfs = [ OrfMultipleMoments( orfpath ) for orfpath in orfpaths ]
-    f0_df_Nfs = [ ( orf.f.Offset1 , orf.f.Cadence1 , orf.f.data.shape[0] ) for orf in orfs ]
-    if not f0_df_Nfs.count( f0_df_Nfs[0] ) == len( f0_df_Nfs ) :
-        raise Exception , 'The orfs input do not have the same frequencies.  Please make sure they do!'
-    else :
-        f = orfs[0].f.data
-    file = open( Ppath , 'rb' ) ; skymap = cpkl.load( file ) ; file.close
-    QPIJs = [ AS.Convolve( orf , skymap , options.GWslope ) for orf in orfs ]
-    PIJs = [ QPIJ.data for QPIJ in QPIJs ] ; PIJs.reverse()
-    comatrix = np.zeros( ( Nvar , Nvar , f.shape[0] ) , dtype = complex )
-    for k in range( Nvar ) :
-        comatrix[ k , k: , : ] = np.array( [ PIJs.pop() for j in range( Nvar - k ) ] )
-        comatrix[ k , :k , : ] = np.copy( np.conj( comatrix[ :k , k , : ] ) )
-    return f , comatrix
-
-
 
 def CSpectra_to_ShortTermFT( cspecdict , seed=None ):
 
