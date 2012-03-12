@@ -12,6 +12,22 @@ Non-LISA-specific routines
 
 
 def get_freqs_from_duration_and_stime( stime , duration ) :
+    """
+    Returns the positive frequencies (without DC and Nyquist) of the
+    Fourier transform of a time-series with some given duration and stime.
+    INPUT:
+    stime --- sampling time [s]
+    duration --- desired duration of time-series [s]
+    OUTPUT:
+    freqdict --- dictionary with the following fields:
+    N --- number of samples in the time-series
+    dt --- sampling time
+    T --- duration of time-series
+    parityN --- Whether N is an even or odd number
+    Nf --- number of positive frequencies (without DC and Nyquist) of F.T
+    df --- frequency resolution of the Fourier transform (F.T)
+    f --- numpy array containing these frequencies
+    """
     N = np.round( duration / stime )
     df = 1 / ( N * stime )
     if N % 2 == 0 :
@@ -124,3 +140,85 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
         ntilde = np.concatenate( ( zerofill , ntilde_p , np.conj(np.fliplr(ntilde_p)) ) , axis = 1 )
     n = np.real( sp.ifft( ntilde , axis = 1 ) )
     return t , n
+
+
+
+def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
+    """
+    This lets you set multipole moments of overlap-reduction function arbitrarily, and save them in the form\n
+    {'OrfMultipleMoments':\n
+    { 'ntrunc': lmax , 'f': f , 'Antenna': IJ , 'real': SpHreal , 'imag': SpHimag } }\n
+    which is loadable by AnisotropySearch.OrfMultipleMoments()\n
+
+    INPUT:
+    orfpath --- file path to save the orfs\n
+    f --- frequency/frequencies at which ORF will be computed
+    IJ --- IJ of ORF
+    lmax --- Maximum degree l for the SpHs
+    OUTPUT:
+    None
+    """
+    """ This is where you define SpHs of real and imaginary parts of ORF. Note that the the value returned is for the SpH defined in pyspharm.  As it is, all multipole moments will be the same function of frequency. (The input IJ has no effect on this!)"""
+    def arbitrary_SpHreal_ML( f ) :
+        g00 = 9
+        SpHreal_ML = np.ones( f.shape ) * ( g00/np.sqrt(2*np.pi) )
+        return SpHreal_ML
+    def arbitrary_SpHimag_ML( f ) :
+        SpHimag_ML = np.zeros( f.shape )
+        return SpHimag_ML
+    indxp = AS.getMLvec( options.lmax , 'p' )
+    SpHreal = np.ones( ( len( indxp ) , options.Nf ) ) * arbitrary_SpHreal_ML( f )
+    SpHimag = np.ones( ( len( indxp ) , options.Nf ) ) * arbitrary_SpHimag_ML( f )
+    orfdict = {'OrfMultipleMoments': { 'ntrunc': options.lmax , 'f': f , 'Antenna': options.IJ , 'real': SpHreal , 'imag': SpHimag } }
+    orfdir = os.path.dirname( orfpath )
+    if orfdir not in glob.glob( orfdir ) :
+        os.system( 'mkdir -p %s' % orfdir )
+    file = open( orfpath , 'wb' ) ; cpkl.dump( orfdict , file , -1 ) ; file.close()
+    print " Orf multipole moments saved in %s " % orfpath
+    return
+
+
+def get_CovarMatrix( Nvar , Ppath , GWSpectralSlope=-3 , *orfpaths ) :
+    """
+    Returns Nvar x Nvar x Nf covariance matrix from convolving ORF with Plm
+    It computes all independent P_{IJ}(f) = H(f)\gamma_{\alpha}^{IJ}(f)P_{\alpha}, and then forms the whole covariance matrix
+    INPUT:
+    Nvar --- number of variables of covariance matrix (if only A and E, Nvar=2)
+    Ppath --- file path to the SkyMap object describing the P_{lm}s
+    GWSpectralSlope --- gravitational wave background spectral slope
+    *orfpaths --- file paths to the tdiORF_SpHs of the independent cross-correlations
+    OUTPUT:
+    f --- frequencies ( Nfx1 numpy array )
+    comatrix --- covariance matrix ( Nvar x Nvar x  Nf numpy array )
+    """
+    Nindies = int( Nvar * ( Nvar + 1 ) / 2 )
+    if Nindies != len( orfpaths ) :
+        raise Exception , 'The covariance matrix %d x %d.  Please make sure that there are %d orfpaths' % ( Nvar , Nvar , Nindies )
+    orfs = [ OrfMultipleMoments( orfpath ) for orfpath in orfpaths ]
+    f0_df_Nfs = [ ( orf.f.Offset1 , orf.f.Cadence1 , orf.f.data.shape[0] ) for orf in orfs ]
+    if not f0_df_Nfs.count( f0_df_Nfs[0] ) == len( f0_df_Nfs ) :
+        raise Exception , 'The orfs input do not have the same frequencies.  Please make sure they do!'
+    else :
+        f = orfs[0].f.data
+    file = open( Ppath , 'rb' ) ; skymap = cpkl.load( file ) ; file.close
+    QPIJs = [ AS.Convolve( orf , skymap , options.GWslope ) for orf in orfs ]
+    PIJs = [ QPIJ.data for QPIJ in QPIJs ] ; PIJs.reverse()
+    comatrix = np.zeros( ( Nvar , Nvar , f.shape[0] ) , dtype = complex )
+    for k in range( Nvar ) :
+        comatrix[ k , k: , : ] = np.array( [ PIJs.pop() for j in range( Nvar - k ) ] )
+        comatrix[ k , :k , : ] = np.copy( np.conj( comatrix[ :k , k , : ] ) )
+    return f , comatrix
+
+    
+def simulate_noise_from_arbitrary_SpH( duration , stime , t0 ,
+                                       GWSpectralSlope , Ppath ,
+                                       seed='random' , N_previous_draws = 0 ,
+                                       Nvar=0 , compute_ORF_SpHs = False ,
+                                       *orfpaths ) :
+    freqdict = get_freqs_from_duration_and_stime( stime , duration )
+    if compute_ORF_SpHs :
+        pass
+    else :
+
+        
+    return 
