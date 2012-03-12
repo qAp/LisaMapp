@@ -145,3 +145,25 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
 
 
 
+def divide_days_in_batches( days , Nb ) :
+    """
+    Divide the days into batches so they can run in parallel
+    INPUT:
+    days --- list containing the days. For example: [1,3] for day#1 and day#3
+    Nb --- number of batches into which to divide the days
+    OUTPUT:
+    days_batches --- list containing the days for each batch. For example, in\
+    [ [1,3] , [9] ], batch#1 contains day#1 and day#3 and batch#2 contains day#9.
+    """
+    Ndays = len( days )
+    if Ndays % Nb == 0 :
+        Ndb = Ndays / Nb
+        days_batches = [ days[ b*Ndb : (b+1)*Ndb  ]  for b in range( Nb ) ]
+    elif Ndays % Nb > 0 :
+        Ndb = Ndays / ( Nb-1 )
+        Ndbl = Ndays % ( Nb-1 )
+        days_batches = [ days[ b*Ndb : (b+1)*Ndb ] for b in range( Nb-1 ) ] + [ days[ (Nb-1)*Ndb : ] ]
+    else :
+        raise Exception , "Both the number of days and number of batches have to be postivie integer!"
+    return days_batches
+
