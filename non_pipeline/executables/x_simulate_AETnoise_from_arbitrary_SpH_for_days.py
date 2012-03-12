@@ -5,6 +5,9 @@ import glob
 import optparse
 import cPickle as cpkl
 import numpy as np
+import AnisotropySearch as AS
+import myUsefuls as mufls
+import testsim as tsim
 
 
 usage = """
@@ -32,7 +35,7 @@ parser.add_option( '--compute_ORF_SpHs' , action='store' , dest='compute_ORF_SpH
 if len( args ) < 3 :
     parser.error( 'You must specify ORFDIR, PPATH and TSDIR!' )
 else :
-    ordir , Ppath , tsdir = args[ :3 ]
+    orfdir , Ppath , tsdir = args[ :3 ]
 
 IJs = [ 'AA' , 'AE' , 'AT' , 'EE' , 'ET' , 'TT' ]
 duration = 86400. ; t0 = 10.0
@@ -44,13 +47,12 @@ for day in options.days :
     t0 = ( day - 1 )*duration
     N_previous_draws = (day - 1) * freqdict['Nf'] * 2 * Nvar
     orfpaths = [ orfdir + '/%s/d%03d.pkl' % ( IJ , day ) for IJ in IJs ]
-    t , n = tsim.simulate_AET\
-            noise_from_arbitrary_SpH( duration , options.stime , t0 ,
-                                      options.GWSpectralSlope , Ppath , lmax ,
-                                      options.seed , N_previous_draws ,
-                                      Nvar , options.compute_ORF_SpHs ,
-                                      *orfpaths )
-    tscale = { 'Cadence1':stime , 'Offset1':inittime }
+    t , n = tsim.simulate_AETnoise_from_arbitrary_SpH( duration , options.stime , t0 ,
+                                                       options.GWSpectralSlope , Ppath , options.lmax ,
+                                                       options.seed , N_previous_draws ,
+                                                       Nvar , options.compute_ORF_SpHs ,
+                                                       *orfpaths )
+    tscale = { 'Cadence1':options.stime , 'Offset1':t0 }
     tsdict = { 't':AS.Coarsable( t , **tscale ) , 
                '1':AS.Coarsable( n[0] , **tscale ) ,
                '2':AS.Coarsable( n[1] , **tscale ) ,
@@ -60,6 +62,6 @@ for day in options.days :
     elif tsdir not in glob.glob( tsdir ) :
         os.system( 'mkdir -p %s' % tsdir )
     print 'saving time-series to disk...'
-    file = open( tsdir+'/d%0d.pkl' % day , 'wb' )
+    file = open( tsdir+'/d%03d.pkl' % day , 'wb' )
     cpkl.dump( tsdict , file , -1 ) ; file.close()
     
