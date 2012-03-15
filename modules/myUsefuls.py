@@ -167,3 +167,42 @@ def divide_days_in_batches( days , Nb ) :
         raise Exception , "Both the number of days and number of batches have to be postivie integer!"
     return days_batches
 
+
+def window_and_join( lts , rts , tail=None ) :
+    """
+    Window two arrays, overlap them by 50% and then add them together.
+    INPUT:
+    lts --- left array
+    rts --- right array
+    tail --- array (which maybe output from previous call to the function) to overlap\n
+    with the first half of the left array
+    OUTPUT:
+    ts --- the joined array, made up of the first half of the left array \n
+    (to which an input tail may or may not have been added) and the second half\n
+    of the left array summed with the first half of the right array 
+    tail --- the second half of the right array
+    NOTE: All arrays mentioned above are windowed first
+    """
+    if len( lts.shape ) != 1 or len( rts.shape ) !=1 :
+        raise InputError , 'lts and rts must both be 1D arrays!'
+    if lts.shape[0] != rts.shape[0] :
+        raise InputError , 'lts and rts must have the same length!'
+    N = lts.shape[0]
+    if N % 2 == 0 :
+        midpt = N / 2
+    else :
+        midpt = ( N - 1 ) / 2
+    sinwin = np.sin( np.pi/N * np.arange( N ) )
+    if not tail :
+        ltsw = np.concatenate( ( lts[ :midpt ] , sinwin[ midpt: ]*lts[ midpt: ] ) )
+        rtsw = sinwin * rts
+        ts = np.concatenate( ( ltsw[ :midpt ] , ltsw[ midpt: ] + rtsw[ :N-midpt ] ) )
+        tail = rtsw[ N-midpt: ]
+    else :
+        if tail.shape != lts[ :midpt ].shape :
+            raise InputError, 'The tail must have shape %d!' % lts[ :midpt ].shape[0]
+        ltsw = sinwin * lts ; rtsw = sinwin * rts
+        ts = np.concatenate( ( tail + ltsw[ :midpt ] ,
+                               ltsw[ midpt: ] + rtsw[ :N-midpt ] ) )
+        tail = rtsw[ N-midpt: ]
+    return ts , tail
