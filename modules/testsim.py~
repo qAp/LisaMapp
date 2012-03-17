@@ -1,3 +1,10 @@
+import os
+import sys
+import glob
+import cPickle as cpkl
+import numpy as np
+import AnisotropySearch as AS
+import myUsefuls as mufls
 
 
 
@@ -5,7 +12,7 @@
 
 
 """
-Test routines for signal/noise simulation.  Maybe be used, or generalised and the used, for real simulations.
+Test routines for signal/noise simulation.  
 """
 
 
@@ -33,12 +40,14 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
     def arbitrary_SpHimag_ML( f ) :
         SpHimag_ML = np.zeros( f.shape )
         return SpHimag_ML
-    indxp = getMLvec( lmax , 'p' )
+    indxp = AS.getMLvec( lmax , 'p' )
     SpHreal = np.ones( ( len( indxp ) , f.shape[0] ) ) * arbitrary_SpHreal_ML( f )
     SpHimag = np.ones( ( len( indxp ) , f.shape[0] ) ) * arbitrary_SpHimag_ML( f )
     orfdict = {'OrfMultipleMoments':{ 'ntrunc':lmax , 'f':f , 'Antenna':IJ , 'real': SpHreal , 'imag': SpHimag } }
     orfdir = os.path.dirname( orfpath )
-    if orfdir not in glob.glob( orfdir ) :
+    if orfdir == '' :
+        pass
+    elif orfdir not in glob.glob( orfdir ) :
         os.system( 'mkdir -p %s' % orfdir )
     file = open( orfpath , 'wb' ) ; cpkl.dump( orfdict , file , -1 ) ; file.close()
     print " Orf multipole moments saved in %s " % orfpath
@@ -104,18 +113,18 @@ def simulate_AETnoise_from_arbitrary_SpH( duration , stime , t0 ,
     """
     Nvar = 3 #3 variables: A, E and T
     IJs = [ 'AA' , 'AE' , 'AT' , 'EE' , 'ET' , 'TT' ] #Explicitly label tdiORF_SpHs (Not really needed here, but this way they can be used for the analysis pipeline.)
-    freqdict = get_freqs_from_duration_and_stime( stime , duration )
+    freqdict = mufls.get_freqs_from_duration_and_stime( stime , duration )
     if compute_ORF_SpHs :
         Nindies = int( Nvar*(Nvar+1) / 2 )
         if len( orfpaths ) < Nindies :
             raise InputError , 'You must enter at least %d orfpaths!' % Nindies
         [ make_arbitrary_tdiORF_SpHs( orfpaths[k] , freqdict['f'] , IJ=IJs[k] , lmax=lmax )
           for k in range( Nindies ) ]
-        comatrix = get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
+        f , comatrix = get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
     else :
-        comatrix = get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
-    t , n = get_noise_freq_domain_CovarMatrix( comatrix , freqdict['df'] , t0 ,
-                                               freqdict['parityN'] ,
-                                               seed=seed ,
-                                               N_previous_draws=N_previous_draws )    
+        f , comatrix = get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
+    t , n = mufls.get_noise_freq_domain_CovarMatrix( comatrix , freqdict['df'] , t0 ,
+                                                     freqdict['parityN'] ,
+                                                     seed=seed ,
+                                                     N_previous_draws=N_previous_draws )    
     return t , n

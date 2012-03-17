@@ -123,6 +123,8 @@ def simulate_AETnoise_from_arbitrary_SpH( duration , stime , t0 ,
         f , comatrix = get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
     else :
         f , comatrix = get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
+        if not np.allclose( f , freqdict['f'] ) :
+            raise InputError , 'Frequencies of loaded covariance matrix do not match those of the fft.  Try computing the tdiORF_SpHs first with compute_ORF_SpHs=True'
     t , n = mufls.get_noise_freq_domain_CovarMatrix( comatrix , freqdict['df'] , t0 ,
                                                      freqdict['parityN'] ,
                                                      seed=seed ,
