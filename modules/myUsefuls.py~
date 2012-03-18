@@ -206,3 +206,15 @@ def window_and_join( lts , rts , tail=None ) :
                                ltsw[ midpt: ] + rtsw[ :N-midpt ] ) )
         tail = rtsw[ N-midpt: ]
     return ts , tail
+
+
+def flatten( nested ) :
+    try:
+        try: nested + ''
+        except TypeError: pass
+        else: raise TypeError
+        for sublist in nested:
+            for element in flatten( sublist ) :
+                yield element
+    except TypeError:
+        yield nested

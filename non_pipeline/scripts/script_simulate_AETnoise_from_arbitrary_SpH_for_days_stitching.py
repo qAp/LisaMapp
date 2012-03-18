@@ -24,22 +24,26 @@ Ntogroup = 2
 if days == None :
     print 'No days are selected.  Nothing to do.' ; sys.exit()
 Ndays = len( days )
-if Ndays % 2 != 0 :
-    Npairs = Ndays / 2
-    half1st = days[ : Ndays/2 ] ; half2nd = days[ Ndays/2: ]
-    half2nd.reverse()
-    pairs = zip( half1st , half2nd )
-    pairs = [ list( pair ) for pair in pairs ]
-    while True :
-        try:
-            pairs.pop()
-    
-else :
-    midpt = ( Ndays - 1 ) / 2
-#if split_days == 'in order' :
-#    days_batches = mufls.divide_days_in_batches( days , Nb )
 
-    
+if len( days ) % 2 == 0 :
+    days_batches = []
+else :
+    days_batches = [ [ days.pop() ] ]
+
+Npairs = len( days ) / 2
+half1st = days[ : Npairs ] ; half2nd = days[ Npairs: ]
+half2nd.reverse()
+pairs = zip( half1st , half2nd )
+pairs = [ list( pair ) for pair in pairs ]
+while True :
+    try:
+        days_batches += [ list( mufls.flatten( [ pairs.pop()
+                                                 for g in range( Ntogroup ) ] ) ) ]
+    except IndexError :
+        days_batches += [ list( mufls.flatten( pairs ) ) ]
+        break
+
+Nb = len( days_batches )    
         
 
 
