@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import myUsefuls as mufls
 
-Nb = 3
+
 
 days = range( 1 , 5+1 )
 stime = 0.5
@@ -18,12 +18,30 @@ Ppath = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/skymaps/library/sphericalhar\
 monics/Y_l0_m0_x1_over_90_lmax_0/Y_l0_m0.pkl'
 orfdir = 'temp_orfs'
 tsdir = 'data'
+Ntogroup = 2
 
 
 if days == None :
     print 'No days are selected.  Nothing to do.' ; sys.exit()
+Ndays = len( days )
+if Ndays % 2 != 0 :
+    Npairs = Ndays / 2
+    half1st = days[ : Ndays/2 ] ; half2nd = days[ Ndays/2: ]
+    half2nd.reverse()
+    pairs = zip( half1st , half2nd )
+    pairs = [ list( pair ) for pair in pairs ]
+    while True :
+        try:
+            pairs.pop()
+    
 else :
-    days_batches = mufls.divide_days_in_batches( days , Nb )
+    midpt = ( Ndays - 1 ) / 2
+#if split_days == 'in order' :
+#    days_batches = mufls.divide_days_in_batches( days , Nb )
+
+    
+        
+
 
 for b in range( Nb ) :
     batch = b + 1

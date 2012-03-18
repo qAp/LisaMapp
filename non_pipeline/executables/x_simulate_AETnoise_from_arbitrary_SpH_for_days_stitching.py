@@ -56,6 +56,7 @@ duration = n * options.stime
 freqdict = mufls.get_freqs_from_duration_and_stime( options.stime , duration )
 
 for day in options.days :
+    print 'Day %d' % day
     t0 = ( day - 1 )*dayinsecs
     t = t0 + options.stime * np.arange( N )
     orfpaths = [ orfdir + '/%s/d%03d.pkl' % ( IJ , day ) for IJ in IJs ]

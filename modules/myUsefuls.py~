@@ -193,7 +193,7 @@ def window_and_join( lts , rts , tail=None ) :
     else :
         midpt = ( N - 1 ) / 2
     sinwin = np.sin( np.pi/N * np.arange( N ) )
-    if not tail :
+    if tail == None :
         ltsw = np.concatenate( ( lts[ :midpt ] , sinwin[ midpt: ]*lts[ midpt: ] ) )
         rtsw = sinwin * rts
         ts = np.concatenate( ( ltsw[ :midpt ] , ltsw[ midpt: ] + rtsw[ :N-midpt ] ) )
