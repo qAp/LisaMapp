@@ -167,6 +167,36 @@ def divide_days_in_batches( days , Nb ) :
         raise Exception , "Both the number of days and number of batches have to be postivie integer!"
     return days_batches
 
+def divide_days_in_batches_reverse_pairup( days , Ntogroup ) :
+    """
+    Divide a list of days in half.  Reverse one half.  Pair the two halves. \n
+    Then split the pairs in groups of same number
+    INPUT:
+    days --- list of days
+    Ntogroup --- number of pairs to group together (into a batch)
+    OUTPUT
+    days_batches --- list whose each element is a list of days for a batch
+    """
+    if len( days ) % 2 == 0 :
+        days_batches = []
+    else :
+        days_batches = [ [ days.pop() ] ]
+    Npairs = len( days ) / 2
+    half1st = days[ : Npairs ] ; half2nd = days[ Npairs: ]
+    half2nd.reverse()
+    pairs = zip( half1st , half2nd )
+    pairs = [ list( pair ) for pair in pairs ]
+    while True :
+        if len( pairs ) >= Ntogroup :
+            days_batches += [ list( flatten( [ pairs.pop()
+                                               for g in range( Ntogroup ) ] ) ) ]
+        elif Ntogroup > len( pairs ) > 0 :
+            days_batches += [ list( flatten( pairs ) ) ]
+            break
+        else :
+            break
+    return days_batches
+
 
 def window_and_join( lts , rts , tail=None ) :
     """
@@ -218,3 +248,4 @@ def flatten( nested ) :
                 yield element
     except TypeError:
         yield nested
+
