@@ -34,7 +34,7 @@ for b in range( Nb ) :
         -d%d --stime %f --GWSpectralSlope %d --lmax %d --seed %s \
         --compute_ORF_SpHs %d %s %s %s\n') %
                      ( day , stime , GWSpectralSlope , lmax , seed ,\
-                       compute_ORF_SpH , orfdir , Ppath , tsdir )
+                       compute_ORF_SpHs , orfdir , Ppath , tsdir )
                      for day in days_batches[ b ] ]
         submitname = 'x_simulate_AETnoiseX_b%03d' % batch
         file = open( submitname + '.sub' , 'w' )

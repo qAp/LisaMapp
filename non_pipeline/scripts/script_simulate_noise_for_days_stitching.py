@@ -4,7 +4,7 @@ import sys
 import glob
 import numpy as np
 import myUsefuls as mufls
-
+import time
 
 
 days = range( 1 , 5+1 )
@@ -42,5 +42,5 @@ for b in range( Nb ) :
                          commands + [ 'echo done' ] ) ; file.close()
         file = open( submitname + '.out' , 'w' ) ; file.write( 'dummy output' ) ; file.close()
         os.system( 'qsub %s' % ( submitname + '.sub' ) ) ; print 'done'
-
+    time.sleep( 0.1 )
 
