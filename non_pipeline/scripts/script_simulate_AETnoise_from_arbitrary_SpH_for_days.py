@@ -48,7 +48,7 @@ for b in range( Nb ) :
                            '#PBS -l walltime=10:00:00\n' , 
                            'cd $PBS_O_WORKDIR\n' , '\n' ] +
                          commands + [ 'echo done' ] ) ; file.close()
-        file = open( submitname + '.out' , 'w' ) ; file.write( 'dummpy output' ) ; file.close()
+        file = open( submitname + '.out' , 'w' ) ; file.write( 'dummy output' ) ; file.close()
         os.system( 'qsub %s' % ( submitname + '.sub' ) ) ; print 'done'
     time.sleep( 0.1 )
 
