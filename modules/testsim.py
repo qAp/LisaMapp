@@ -34,7 +34,7 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
     """
     """ This is where you define SpHs of real and imaginary parts of ORF. Note that the the value returned is for the SpH defined in pyspharm.  As it is, all multipole moments will be the same function of frequency. (The input IJ has no effect on this!)"""
     def arbitrary_SpHreal_ML( f ) :
-        g00 = 900.
+        g00 = 9.
         SpHreal_ML = np.ones( f.shape ) * ( g00/np.sqrt(2*np.pi) )
         return SpHreal_ML
     def arbitrary_SpHimag_ML( f ) :
