@@ -126,6 +126,7 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
     ntilde_p = np.zeros( ( Nts , Nf ) , dtype=complex )
     for k in range( Nf ) :
         C = comatrix[ :,:,k ]
+        print C
         if not np.allclose( C , np.conj( np.transpose( C ) ) ) :
             print "Covariance matrix NOT Hermitian! Unphysical."        
         w , V = sp_linalg.eig( C )
