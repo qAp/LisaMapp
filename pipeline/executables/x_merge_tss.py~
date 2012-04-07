@@ -59,14 +59,14 @@ for b in range( Nb ) :
     file = open( submitname , 'w' )
     file.writelines( [ '#!/bin/bash\n' ,
                        '#PBS -N %s\n' % submitname ,
-                       '#PBS -o x_merge_ts_files_b%03d.out\n' % ( b+1 )
+                       '#PBS -o x_merge_ts_files_b%03d.out\n' % ( b+1 ) ,
                        '#PBS -q compute\n' ,
                        '#PBS -j oe\n' ,
                        '#PBS -l nodes=1:ppn=1\n' ,
                        '#PBS -l walltime=5:00:00\n' ,
                        'cd $PBS_O_WORKDIR\n' ,
                        '\n' ] + commands + [ 'echo done' ] ) ; file.close()
-    
+    file = open( 'x_merge_ts_files_b%03d.out' % ( b+1 ) , 'w' ) ; file.write( 'dummpy output' ) ; file.close()
     os.system( 'qsub %s' % submitname )
 
 
