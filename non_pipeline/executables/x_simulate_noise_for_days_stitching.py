@@ -79,13 +79,14 @@ for day in options.days :
                                                            Npd_before_segr )
 
         for v in range( Nvar ) :
-            ts , tail = mufls.window_and_join( tsl[v] , tsr[v] , tails[v] )
             print 'v = ' , v
-            if s != 1 :
-                print 'TSs[v][0] , TSs[v][-1]' , TSs[v][0] , TSs[v][-1] 
-            print 'ts[0] , ts[-1]' , ts[0] , ts[-1]  
+            if s == 1 :
+                print 'tails[v]' , tails[v]
+            else :
+                print 'tails[v][:3]' , tails[v][:3]
+            ts , tail = mufls.window_and_join( tsl[v] , tsr[v] , tails[v] )
             TSs[ v ] +=  list( ts )  ; tails[ v ] = np.copy( tail )
-            
+            print 'tails[v][:3]' , tails[v][:3]
         s += 2
 
     TSs = np.array( TSs )[ : , :N ]
