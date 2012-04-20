@@ -80,9 +80,12 @@ for day in options.days :
 
         for v in range( Nvar ) :
             ts , tail = mufls.window_and_join( tsl[v] , tsr[v] , tails[v] )
-            print 'ts' , ts  ; print 'tail' , tail
+            print 'v = ' , v
+            if s != 1 :
+                print 'TSs[v][0] , TSs[v][-1]' , TSs[v][0] , TSs[v][-1] 
+            print 'ts[0] , ts[-1]' , ts[0] , ts[-1]  
             TSs[ v ] +=  list( ts )  ; tails[ v ] = np.copy( tail )
-            print 'TSs[v][-1]' , TSs[v][-1] ; print 'tails[v]' , tails[v]
+            
         s += 2
 
     TSs = np.array( TSs )[ : , :N ]
