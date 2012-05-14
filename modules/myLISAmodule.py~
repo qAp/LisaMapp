@@ -468,6 +468,7 @@ class LISA_in_the_Sky(object):
         for x , elatd in enumerate(lats):
             for y , elond in enumerate(lons):
                 elat , elon = elatd * np.pi / 180 , elond * np.pi / 180
+                print 'myLISAmodule.py: LISA_in_the_Sky.get_pixels() working on ( elat , elon ) = ( %f , %f )' % ( np.degrees( elat ) , np.degrees( elon ) )
                 response = planeGWresponse( self.Lisa , elat , elon , 0 )
                 if whichfunc == 'linkF' :
                     if len( args ) < 2 :
