@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+"""
+This script, for a pipeline analysis run (with analysis directory ANADIR) \
+, retrieves and writes the analysis PSDs (from psd), \
+average PSDs (from avgpsd) and the cross-correlated outputs cIJs \
+(from one of the cIJs) to a dat-file.  
+"""
+import os
+import sys
+import glob
+import cPickle as cpkl
+import numpy as np
+
+day = 2
+anadir = ''
+datpath = ''
+
+
+"""
+Get PSDs
+"""
+file = open( anadir+'/psd/d%03d.pkl' % day , 'rb' )
+psddict = cpkl.load( file )
+file.close()
+
+"""
+Get average PSDs
+"""
+file = open( anadir + '/avgpsd/d%03d.pkl' % day , 'rb' )
+avgpsddict = cpkl.load( file )
+file.close()
+
+"""
+Get cIJs (coarsegrained cross-correlated outputs)
+"""
+file = open( anadir + '/GW_slope_0/AE/cIJ/d%03d.pkl' % day , 'rb' )
+cIJdict = cpkl.load( file )
+file.close()
+
+
+file = open( datpath , 'w' )
+
+print >> file , '#PSDs'
+print >> file , ( '#'+'%19s' + 3*'%20s' ) % ( 'freq[Hz]' , 'AA' , 'EE' , 'TT' )
+for k in range( psddict['f'].data.shape[0] ) :
+    print >> file , ( 4*'%20.10f' ) % ( psddict['f'].data[k] , psddict['AA'].data[k] ,
+                                        psddict['EE'].data[k] , psddict['TT'].data[k] )
+print >> file , '\n'
+
+print >> file , '#average PSDs'
+print >> file , ( '#'+'%19s' + 3*'%20s' ) % ( 'freq[Hz]' , 'AA' , 'EE' , 'TT' )
+for k in range( avgpsddict['f'].data.shape[0] ) :
+    print >> file , ( 4*'%20.10f' ) % ( avgpsddict['f'].data[k] , avgpsddict['AA'].data[k] ,
+                                        avgpsddict['EE'].data[k] , avgpsddict['TT'].data[k] )
+print >> file , '\n'
+
+print >> file , '#coarse cIJs'
+print >> file , ( '#'+'%19s' + 3*'%20s' ) % ( 'freq[Hz]' , 'IJ' , 'II' , 'JJ' )
+for k in range( cIJdict['f'].data.shape[0] ) :
+    print >> file , ( 4*'%20.10f' ) % ( cIJdict['f'].data[k] , cIJdict['AE'].data[k] ,
+                                        cIJdict['AA'].data[k] , cIJdict['EE'].data[k] )
+print >> file , '\n'
+
+
+file.close()
