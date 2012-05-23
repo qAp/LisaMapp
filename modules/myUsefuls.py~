@@ -222,7 +222,7 @@ def window_and_join( lts , rts , tail=None ) :
         midpt = N / 2
     else :
         midpt = ( N - 1 ) / 2
-    sinwin = np.sin( np.pi/N * np.arange( N ) )
+    sinwin = np.sin( np.pi/(N-1) * np.arange( N ) )
     if tail == None :
         ltsw = np.concatenate( ( lts[ :midpt ] , sinwin[ midpt: ]*lts[ midpt: ] ) )
         rtsw = sinwin * rts
