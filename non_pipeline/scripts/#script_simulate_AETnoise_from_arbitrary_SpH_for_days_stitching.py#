@@ -11,12 +11,16 @@ days = range( 1 , 5+1 )
 stime = 0.5
 seed = '1'
 Tseg = 43200
+GWSpectralSlope = 0
+lmax = 0
+compute_ORF_SpHs = True
+Ppath = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/skymaps/library/sphericalhar\
+monics/Y_l0_m0_x1_over_90_lmax_0/Y_l0_m0.pkl'
+orfdir = 'temp_orfs'
 tsdir = 'data'
 Ntogroup = 2
-tditype , tdigen , whichtdis = 'Michelson' , 'G2' , 'AET'
 afterokpath = ''
 jobidspath = ''
-
 
 
 
@@ -38,10 +42,13 @@ for b in range( Nb ) :
     if days_batches[ b ] == [] :
         print 'No days in this batch.  Nothing to do...' ; sys.exit()
     else :
-        commands = [ ('./x_simulate_TDInoise_for_days_stitching.py --tditype %s --tdigen %s --whichtdis %s -d%d --Tseg %f --stime %f --seed %s %s\n') %
-                     ( tditype , tdigen , whichtdis , day , Tseg , stime , seed , tsdir )
+        commands = [ ('./x_simulate_AETnoise_from_arbitrary_SpH_for_days_stitching.py \
+        -d%d --Tseg %f --stime %f --GWSpectralSlope %d --lmax %d --seed %s \
+        --compute_ORF_SpHs %d %s %s %s\n') %
+                     ( day , Tseg , stime , GWSpectralSlope , lmax , seed ,\
+                       compute_ORF_SpHs , orfdir , Ppath , tsdir )
                      for day in days_batches[ b ] ]
-        submitname = 'x_simulate_TDInoise_for_days_stitching_b%03d' % batch
+        submitname = 'x_simulate_AETnoiseX_b%03d' % batch
         file = open( submitname + '.sub' , 'w' )
         file.writelines( [ '#!/bin/bash\n' ,
                            '#PBS -N %s\n' % ( submitname + '.sub' ) ,
@@ -56,7 +63,7 @@ for b in range( Nb ) :
                               ( ':'.join( afteroks ) , submitname + '.sub' ) ,
                               shell=True , stdout=subprocess.PIPE )
         jobids += [ p.communicate()[0].rstrip() ]
-        
+
     time.sleep( 0.8 )
 
 file = open( jobidspath , 'w' )

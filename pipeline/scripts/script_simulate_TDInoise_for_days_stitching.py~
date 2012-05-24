@@ -25,7 +25,7 @@ for b in range( Nb ) :
     if days_batches[ b ] == [] :
         print 'No days in this batch.  Nothing to do...' ; sys.exit()
     else :
-        commands = [ ('./x_simulate_TDInoise_for_days_stitching.py --tditype %s --tdigen %s whichtdis %s -d%d --Tseg %f --stime %f --seed %s %s\n') %
+        commands = [ ('./x_simulate_TDInoise_for_days_stitching.py --tditype %s --tdigen %s --whichtdis %s -d%d --Tseg %f --stime %f --seed %s %s\n') %
                      ( tditype , tdigen , whichtdis , day , Tseg , stime , seed , tsdir )
                      for day in days_batches[ b ] ]
         submitname = 'x_simulate_TDInoise_for_days_stitching_b%03d' % batch
