@@ -6,6 +6,7 @@ import glob
 import numpy as np
 import AnisotropySearch as AS
 import optparse
+import time
 
 usage = """
 %prog SETUP_MERGE_TSS.PKL\n
@@ -68,5 +69,5 @@ for b in range( Nb ) :
                        '\n' ] + commands + [ 'echo done' ] ) ; file.close()
     file = open( 'x_merge_ts_files_b%03d.out' % ( b+1 ) , 'w' ) ; file.write( 'dummpy output' ) ; file.close()
     os.system( 'qsub %s' % submitname )
-
+    time.sleep( 0.2 )
 

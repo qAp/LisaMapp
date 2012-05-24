@@ -65,6 +65,7 @@ for b in range( Nb ) :
         jobids += [ p.communicate()[0].rstrip() ]
 
     time.sleep( 0.8 )
+
 file = open( jobidspath , 'w' )
 for k in range( len( jobids ) ) :
     print >> file , '%s' % jobids[k]
