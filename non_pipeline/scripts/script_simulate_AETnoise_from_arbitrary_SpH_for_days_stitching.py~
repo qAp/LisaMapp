@@ -50,5 +50,5 @@ for b in range( Nb ) :
                          commands + [ 'echo done' ] ) ; file.close()
         file = open( submitname + '.out' , 'w' ) ; file.write( 'dummy output' ) ; file.close()
         os.system( 'qsub %s' % ( submitname + '.sub' ) ) ; print 'done'
-    time.sleep( 0.5 )
+    time.sleep( 0.8 )
 
