@@ -249,7 +249,7 @@ if options.do_S :
             print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
             orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
             Spath = workdir + '/GW_slope_%d/%s/S/S.pkl' % ( slope , IJ )            
-            jobname = submitname+'_slope_%d_IJ_%s.sub' % ( slope , IJ )
+            jobname = submitname+'_slope_%d_IJ_%s' % ( slope , IJ )
             file = open( jobname+'.sub' , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
                                '#PBS -N %s\n' % jobname ,

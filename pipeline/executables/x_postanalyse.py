@@ -5,6 +5,7 @@ import glob
 import time
 import cPickle as cpkl
 from optparse import OptionParser
+import subprocess
 
 parser = OptionParser( '%prog SETUP.pkl' )
 parser.add_option( '--do_P' , action='store_true' , help = 'Calculate clean map P' )
@@ -69,26 +70,24 @@ if options.do_network_X :
 
 
 if options.do_PP :
+    print 'Submitting job/jobs for estimating daily clean maps \hat{\mathcal{P}}(day)...'
     os.chdir( workdir )
-    print 'Calculating the daily clean map...'
     os.system( 'cp %s .' % ( execdir + '/x_P.py' ) )
     for slope in setup['PP']['GWslopes'] :
         for IJ in setup['PP']['IJs'] :
-            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
+            print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
             commands = []
             for day in setup['PP']['days'] :
-#                print 'Day %d' % day
                 GGpath = workdir + '/GW_slope_%d/%s/GG/GG_d%03d.pkl' % ( slope , IJ , day )
                 XXpath = workdir + '/GW_slope_%d/%s/XX/XX_d%03d.pkl' % ( slope , IJ , day )
                 PPpath = workdir + '/GW_slope_%d/%s/PP/PP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['PP']['lmax'] )
-                if GGpath not in glob.glob( GGpath ) :
-                    continue
-                if XXpath not in glob.glob( XXpath ) :
-                    continue
-                commands += [  './x_P.py --regMethod %d --regCutoff %s --lmax %d --mapnorm %f --nlon %d --nlat %d --N_keptSV %s %s %s\n'
-                               % ( setup['PP']['regMethod'] , setup['PP']['regCutoff'] , setup['PP']['lmax'] , setup['PP']['mapnorm'] , setup['PP']['nlon'] , setup['PP']['nlat'] , GGpath , XXpath , PPpath ) ]
+                commands += [  ( './x_P.py --regMethod %d --regCutoff %s --lmax %d --mapnorm %f \
+                --nlon %d --nlat %d --N_keptSV %s %s %s\n' )
+                               % ( setup['PP']['regMethod'] , setup['PP']['regCutoff'] , setup['PP']['lmax'] ,
+                                   setup['PP']['mapnorm'] , setup['PP']['nlon'] , setup['PP']['nlat'] ,
+                                   GGpath , XXpath , PPpath ) ]
             jobname = 'do_PP_slope_%d_IJ_%s' % ( slope , IJ )
-            file = open( '%s.sub' % jobname , 'w' )
+            file = open( jobname+'.sub' , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
                                '#PBS -N %s\n' % jobname ,
                                '#PBS -o %s.out\n' % jobname ,
@@ -97,28 +96,42 @@ if options.do_PP :
                                '#PBS -l nodes=1:ppn=1\n' ,
                                '#PBS -l walltime=10:00:00\n' , '\n' ,
                                'cd $PBS_O_WORKDIR\n' , '\n' ] + commands +
-                             [ "echo 'do_PP done'" ] ) ; file.close()
-            file = open( '%s.out' % jobname , 'w' ) ; file.write( 'dummpy output file' ) ; file.close()
-            print 'Submitting job for %s...' % jobname ; os.system( 'qsub %s.sub' % jobname ) ; print 'done'
+                             [ "echo 'do_PP done'" ] )
+            file.close()
+            if setup['PP']['wait for XG'] :
+                file = open( workdir+'/x_pklX_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' ) 
+                x_pklX_jobid = file.readlines()[0].rstrip()
+                file.close()
+                file = open( workdir+'/x_G_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                x_G_jobid = file.readlines()[0].rstrip()
+                file.close()
+                afterok = ':'.join( [ x_pklX_jobid , x_G_jobid ] )
+            else :
+                afterok = ''
+            p = subprocess.Popen( 'qsub -W depend=afterok:%s %s' % ( afterok , jobname+'.sub' ) ,
+                                  shell=True , stdout=subprocess.PIPE )
+            do_PP_jobid = p.communicate()[0].rstrip() #this variable is overwritten for multiple IJ or GW slopes
+            file = open( jobname+'_jobid' , 'w' )
+            print >> file , do_PP_jobid
+            file.close()
+    print 'done'
     os.chdir( workdir )
 
 
             
 
-
 if options.do_P :
+    print 'Submitting job/jobs for estimating daily clean maps \hat{\mathcal{P}}...'
     os.chdir( workdir )
-    print 'Calculating the clean map...'
     os.system( 'cp %s .' % ( execdir + '/x_P.py' ) )
     for slope in setup['P']['GWslopes'] :
         for IJ in setup['P']['IJs'] :
-            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
+            print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
             Gdir = workdir + '/GW_slope_%d/%s/G/' % ( slope , IJ ) ; Gpath = Gdir + '/G.pkl'
             Xdir = workdir + '/GW_slope_%d/%s/X/' % ( slope , IJ ) ; Xpath = Xdir + '/X.pkl'
             Pdir = workdir + '/GW_slope_%d/%s/P/' % ( slope , IJ ) ; Ppath = Pdir + '/P_lmax_%d.pkl' % setup['P']['lmax']
-
             jobname = 'do_P_slope_%d_IJ_%s' % ( slope , IJ )
-            file = open( '%s.sub' % jobname , 'w' )
+            file = open( jobname+'.sub' , 'w' )
             file.writelines( [ '#!/bin/bash\n' ,
                                '#PBS -N %s\n' % jobname ,
                                '#PBS -o %s.out\n' % jobname ,
@@ -127,20 +140,224 @@ if options.do_P :
                                '#PBS -l nodes=1:ppn=1\n' ,
                                '#PBS -l walltime=10:00:00\n' , '\n' ,
                                'cd $PBS_O_WORKDIR\n' , '\n' ,
-                               './x_P.py --regMethod %d --regCutoff %s --lmax %d --mapnorm %f --nlon %d --nlat %d --N_keptSV %s %s %s\n'
-                               % ( setup['P']['regMethod'] , setup['P']['regCutoff'] , setup['P']['lmax'] , setup['P']['mapnorm'] ,
-                         setup['P']['nlon'] , setup['P']['nlat'] , Gpath , Xpath , Ppath ) ,
-                               "echo 'do_P done'" ] ) ; file.close()
-            file = open( '%s.out' % jobname , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
-            print 'Submitting job for do_P...' ; os.system( 'qsub %s.sub' % jobname ) ; print 'done.'
-#            os.system( './x_P.py --regMethod %d --regCutoff %s --lmax %d --mapnorm %f --nlon %d --nlat %d --N_keptSV %s %s %s' %
-#                       ( setup['P']['regMethod'] , setup['P']['regCutoff'] , setup['P']['lmax'] , setup['P']['mapnorm'] ,
-#                         setup['P']['nlon'] , setup['P']['nlat'] , Gpath , Xpath , Ppath ) ) ; print 'done'
+                               './x_P.py --regMethod %d --regCutoff %s --lmax %d --mapnorm %f \
+                               --nlon %d --nlat %d --N_keptSV %s %s %s\n'
+                               % ( setup['P']['regMethod'] , setup['P']['regCutoff'] , setup['P']['lmax'] ,
+                                   setup['P']['mapnorm'] , setup['P']['nlon'] , setup['P']['nlat'] ,
+                                   Gpath , Xpath , Ppath ) ,
+                               "echo 'do_P done'" ] )
+            file.close()
+            if setup['P']['wait for XG'] :
+                print 'P waits for X and G'
+                file = open( workdir+'/x_pklX_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' ) 
+                x_pklX_jobid = file.readlines()[0].rstrip()
+                file.close()
+                file = open( workdir+'/x_G_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                x_G_jobid = file.readlines()[0].rstrip()
+                file.close()
+                afterok = ':'.join( [ x_pklX_jobid , x_G_jobid ] )
+            else :
+                print 'P waits for no one'
+                afterok = ''
+            p = subprocess.Popen( 'qsub -W depend=afterok:%s %s' % ( afterok , jobname+'.sub' ) ,
+                                  shell=True , stdout=subprocess.PIPE )
+            do_P_jobid = p.communicate()[0].rstrip() #this variable is overwritten for multiple IJ or GW slopes
+            file = open( jobname+'_jobid' , 'w' )
+            print >> file , do_P_jobid
+            file.close()            
+    print 'done'
+    os.chdir( workdir )
+
+
+if options.do_stdPP :
+    print 'Submitting jobs for estimating standard deviations of daily clean maps...'
+    os.chdir( workdir )
+    os.system( 'cp %s .' % ( execdir + '/x_stdP.py' ) )
+    for slope in setup['stdPP']['GWslopes'] :
+        for IJ in setup['stdPP']['IJs'] :
+            print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
+            commands = []
+            for day in setup['stdPP']['days'] :
+                GGpath = workdir + '/GW_slope_%d/%s/GG/GG_d%03d.pkl' % ( slope , IJ , day )
+                SSpath = workdir + '/GW_slope_%d/%s/SS/SS_d%03d.pkl' % ( slope , IJ , day )
+                stdPPpath = workdir + ( '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d.pkl' %
+                                        ( slope , IJ , day , setup['stdPP']['lmax'] ) )
+                stdPPstrongpath = workdir + ( '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d_strong.pkl' %
+                                              ( slope , IJ , day , setup['stdPP']['lmax'] ) )
+                if setup['stdPP']['signal limit'] == 'weak' :
+                    commands += [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s\n' %
+                                  ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] ,
+                                    setup['stdPP']['lmax'] , GGpath , stdPPpath ) ]
+                elif setup['stdPP']['signal limit'] == 'strong' :
+                    commands += [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d \
+                    --strong_signal --Spath %s %s %s\n' %
+                                  ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] ,
+                                    setup['stdPP']['lmax'] , SSpath , GGpath , stdPPstrongpath ) ]
+                elif setup['stdPP']['signal limit'] == 'both' :
+                    command_weak = [ ('./x_stdP.py --regMethod %d --regCutoff %s --lmax %d --Spath %s %s %s\n')
+                                     % ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] ,
+                                         setup['stdPP']['lmax'] , SSpath , GGpath , stdPPpath ) ]
+                    command_strong = [ ('./x_stdP.py --regMethod %d --regCutoff %s --lmax %d \
+                    --strong_signal --Spath %s %s %s\n')  %
+                                       ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] ,
+                                         setup['stdPP']['lmax'] , SSpath , GGpath , stdPPstrongpath ) ]
+                    commands += ( command_weak + command_strong )
+            jobname = 'do_stdPP_slope_%d_IJ_%s' % ( slope , IJ )
+            file = open( jobname+'.sub' , 'w' )
+            file.writelines( [ '#!/bin/bash\n' ,
+                               '#PBS -N %s\n' % jobname ,
+                               '#PBS -o %s.out\n' % jobname ,
+                               '#PBS -j oe\n' ,
+                               '#PBS -q compute\n' ,
+                               '#PBS -l nodes=1:ppn=1\n' ,
+                               '#PBS -l walltime=10:00:00\n' , '\n' ,
+                               'cd $PBS_O_WORKDIR\n' , '\n' ]
+                             + commands +
+                             [ "echo 'do_stdPP done'" ] )
+            file.close()
+            if setup['stdPP']['wait for SG'] :
+                file = open( workdir+'/x_S_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' ) 
+                x_S_jobid = file.readlines()[0].rstrip()
+                file.close()
+                file = open( workdir+'/x_G_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                x_G_jobid = file.readlines()[0].rstrip()
+                file.close()
+                if setup['stdPP']['signal limit'] == 'weak' :
+                    afterok = x_G_jobid
+                elif setup['stdPP']['signal limit'] in [ 'strong' , 'both' ] :
+                    afterok = ':'.join( [ x_S_jobid , x_G_jobid ] )
+                else :
+                    afterok = ''
+            p = subprocess.Popen( 'qsub -W depend=afterok:%s %s' % ( afterok , jobname+'.sub' ) ,
+                                  shell=True , stdout=subprocess.PIPE )
+            do_stdPP_jobid = p.communicate()[0].rstrip() #variable is overwritten for multiple IJ or GW slopes
+            file = open( jobname+'_jobid' , 'w' )
+            print >> file , do_stdPP_jobid
+            file.close()            
+    print 'done'
     os.chdir( workdir )
 
 
 
+if options.do_stdP :
+    print 'Submitting jobs for estimating standard deviations of daily clean maps...'
+    os.chdir( workdir )
+    os.system( 'cp %s .' % ( execdir + '/x_stdP.py' ) )
+    for slope in setup['stdP']['GWslopes'] :
+        for IJ in setup['stdP']['IJs'] :
+            print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
+            Gpath = workdir + '/GW_slope_%d/%s/G/G.pkl' % ( slope , IJ )
+            stdPpath = workdir + ( '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl'
+                                   % ( slope , IJ , setup['stdP']['lmax'] ) )
+            stdPstrongpath = workdir + ( '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' %
+                                         ( slope , IJ , setup['stdP']['lmax'] ) )
+            if setup['stdP']['signal limit'] == 'weak' :
+                command = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s\n'
+                            % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] ,
+                                setup['stdP']['lmax'] , Gpath , stdPpath ) ]
+            elif setup['stdP']['signal limit'] == 'strong' :
+                command = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d \
+                --strong_signal --Spath %s %s %s\n'
+                            % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] ,
+                                setup['stdP']['lmax'] , setup['stdP']['Spath'] , Gpath , stdPstrongpath ) ]
+            elif setup['stdP']['signal limit'] == 'both' :
+                command_weak = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s\n'
+                                 % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] ,
+                                     setup['stdP']['lmax'] , Gpath , stdPpath ) ]
+                command_strong = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d \
+                --strong_signal --Spath %s %s %s\n'
+                                   % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] ,
+                                       setup['stdP']['lmax'] ,
+                                       setup['stdP']['Spath'] , Gpath , stdPstrongpath ) ] 
+                command = command_weak + command_strong
+            jobname = 'do_stdP_slope_%d_IJ_%s' % ( slope , IJ )
+            file = open( jobname+'.sub' , 'w' )
+            file.writelines( [ '#!/bin/bash\n' ,
+                               '#PBS -N %s\n' % jobname ,
+                               '#PBS -o %s.out\n' % jobname ,
+                               '#PBS -j oe\n' ,
+                               '#PBS -q compute\n' ,
+                               '#PBS -l nodes=1:ppn=1\n' ,
+                               '#PBS -l walltime=10:00:00\n' , '\n' ,
+                               'cd $PBS_O_WORKDIR\n' , '\n' ] +
+                             command +
+                             [ "echo 'do_stdP done'" ] )
+            file.close()
+            if setup['stdPP']['wait for SG'] :
+                file = open( workdir+'/x_S_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' ) 
+                x_S_jobid = file.readlines()[0].rstrip()
+                file.close()
+                file = open( workdir+'/x_G_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                x_G_jobid = file.readlines()[0].rstrip()
+                file.close()
+                if setup['stdP']['signal limit'] == 'weak' :
+                    afterok = x_G_jobid
+                elif setup['stdP']['signal limit'] in [ 'strong' , 'both' ] :
+                    afterok = ':'.join( [ x_S_jobid , x_G_jobid ] )
+                else :
+                    afterok = ''
+            p = subprocess.Popen( 'qsub -W depend=afterok:%s %s' % ( afterok , jobname+'.sub' ) ,
+                                  shell=True , stdout=subprocess.PIPE )
+            do_stdP_jobid = p.communicate()[0].rstrip() #variable is overwritten for multiple IJ or GW slopes
+            file = open( jobname+'_jobid' , 'w' )
+            print >> file , do_stdP_jobid
+            file.close()
+    print 'done'
+    os.chdir( workdir )
 
+
+if options.do_temp_optimals :
+    print 'Submitting job for calculating optimal clean map and standard deviation from daily estimates'
+    os.chdir( workdir )
+    os.system( 'cp %s .' % ( execdir + '/x_temp_optimals.py' ) )
+    for slope in setup['temp_optimals']['GWslopes'] :
+        for IJ in setup['temp_optimals']['IJs'] :
+            print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
+            PPdir = workdir + '/GW_slope_%d/%s/PP' % ( slope , IJ )
+            stdPPdir = workdir + '/GW_slope_%d/%s/stdPP' % ( slope , IJ )
+            SSdir = workdir + '/GW_slope_%d/%s/SS' % ( slope , IJ )
+            sumdir = workdir + '/GW_slope_%d/%s/optimals/summary_lmax_%d.pkl' % ( slope , IJ , setup['temp_optimals']['lmax'] )
+            jobname = 'do_optimals_slope_%d_IJ_%s' % ( slope , IJ )
+            file = open( jobname+'.sub' , 'w' )
+            file.writelines( [ '#!/bin/bash\n' ,
+                               '#PBS -N %s\n' % jobname ,
+                               '#PBS -o %s.out\n' % jobname ,
+                               '#PBS -j oe\n' ,
+                               '#PBS -q compute\n' ,
+                               '#PBS -l nodes=1:ppn=1\n' ,
+                               '#PBS -l walltime=10:00:00\n' ,
+                               '\n' , 
+                               'cd $PBS_O_WORKDIR\n' ,
+                               '\n' ,
+                               ( './x_temp_optimals.py ' + '-d%d '*len(setup['temp_optimals']['days'] )
+                                 + '--lmax %d %s %s %s %s\n' ) %
+                               tuple( setup['temp_optimals']['days'] + [ setup['temp_optimals']['lmax'] ,
+                                          PPdir , stdPPdir , SSdir , sumdir ] ) ,
+                               '\n' , "echo 'do_temp_optimals done'" ] )
+            file.close()
+            if setup['temp_optimals']['wait for jobs'] :
+                file = open( workdir+'/do_PP_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                do_PP_jobid = file.readlines()[0].rstrip()
+                file.close()
+                file = open( workdir+'/do_stdPP_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                do_stdPP_jobid = file.readlines()[0].rstrip()
+                file.close()
+                file = open( workdir+'/x_S_slope_%d_IJ_%s_jobid' % ( slope , IJ ) , 'r' )
+                do_S_jobid = file.readlines()[0].rstrip()
+                file.close()
+                afterok = ':'.join( [ do_PP_jobid , do_stdPP_jobid , do_S_jobid ] )
+            else :
+                afterok = ''
+            p = subprocess.Popen( 'qsub -W depend=afterok:%s %s' % ( afterok , jobname+'.sub' ) ,
+                                  shell=True , stdout=subprocess.PIPE )
+            do_optimals_jobid = p.communicate()[0].rstrip() #variable overwritten for multiple IJ and GW slopes.
+            file = open( jobname+'_jobid' , 'w' )
+            print >> file , do_optimals_jobid
+            file.close()
+    print 'done'
+    os.chdir( workdir )
+
+    
 
 if options.do_sigma_avg :
     print 'Calculating sky-average of standard deviation of Plm...'
@@ -191,101 +408,6 @@ if options.do_sigmamap :
 
 
 
-
-
-if options.do_stdPP :
-    os.chdir( workdir )
-    print 'Calculating standard deviation of daily clean maps PPlm...'
-    os.system( 'cp %s .' % ( execdir + '/x_stdP.py' ) )
-    for slope in setup['stdPP']['GWslopes'] :
-        for IJ in setup['stdPP']['IJs'] :
-            command = []
-            for day in setup['stdPP']['days'] :
-                GGpath = workdir + '/GW_slope_%d/%s/GG/GG_d%03d.pkl' % ( slope , IJ , day )
-                if GGpath not in glob.glob( GGpath ) :
-                    continue
-                if setup['stdPP']['signal limit'] == 'weak' :
-                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )
-                    command += [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s\n' %
-                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] , GGpath , stdPPpath ) ]
-                elif setup['stdPP']['signal limit'] == 'strong' :
-                    SSpath = workdir + '/GW_slope_%d/%s/SS/SS_d%03d.pkl' % ( slope , IJ , day )
-                    if SSpath not in glob.glob( SSpath ) :
-                        continue
-                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d_strong.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )           
-                    command += [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s\n' %
-                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] , SSpath , GGpath , stdPPpath ) ]
-                elif setup['stdPP']['signal limit'] == 'both' :
-                    SSpath = workdir + '/GW_slope_%d/%s/SS/SS_d%03d.pkl' % ( slope , IJ , day )
-                    if SSpath not in glob.glob( SSpath ) :
-                        continue
-                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )
-                    command_weak = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --Spath %s %s %s\n' %
-                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] , SSpath , GGpath , stdPPpath ) ]
-                    stdPPpath = workdir + '/GW_slope_%d/%s/stdPP/stdPP_d%03d_lmax_%d_strong.pkl' % ( slope , IJ , day , setup['stdPP']['lmax'] )           
-                    command_strong = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s\n' %
-                               ( setup['stdPP']['regMethod'] , setup['stdPP']['regCutoff'] , setup['stdPP']['lmax'] , SSpath , GGpath , stdPPpath ) ]
-                    command += ( command_weak + command_strong )
-            jobname = 'do_stdPP_slope_%d_IJ_%s' % ( slope , IJ )
-            file = open( '%s.sub' % jobname , 'w' )
-            file.writelines( [ '#!/bin/bash\n' ,
-                               '#PBS -N %s\n' % jobname ,
-                               '#PBS -o %s.out\n' % jobname ,
-                               '#PBS -j oe\n' ,
-                               '#PBS -q compute\n' ,
-                               '#PBS -l nodes=1:ppn=1\n' ,
-                               '#PBS -l walltime=10:00:00\n' , '\n' ,
-                               'cd $PBS_O_WORKDIR\n' , '\n' ] + command + [ "echo 'do_stdPP done'" ]
-                             ) ; file.close()
-            file = open( '%s.out' % jobname , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
-            print 'Submitting job for %s...' % jobname ; os.system( 'qsub %s.sub' % jobname ) ; print 'done.'
-    os.chdir( workdir )
-
-
-
-
-
-
-if options.do_stdP :
-    os.chdir( workdir )
-    print 'Calculating standard deviation of clean map Plm...'
-    os.system( 'cp %s .' % ( execdir + '/x_stdP.py' ) )
-    for slope in setup['stdP']['GWslopes'] :
-        for IJ in setup['stdP']['IJs'] :
-            print 'GWslope = %d , IJ = %s' % ( slope , IJ )
-            Gpath = workdir + '/GW_slope_%d/%s/G/G.pkl' % ( slope , IJ )
-            if Gpath not in glob.glob( Gpath ) :
-                print 'G not found at %s. Skip...' % Gpath ; continue
-            if setup['stdP']['signal limit'] == 'weak' :
-                stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
-                command = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s\n'
-                            % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , Gpath , stdPpath ) ]
-            elif setup['stdP']['signal limit'] == 'strong' :
-                stdPpath = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
-                command = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s\n'
-                            % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['Spath'] , Gpath , stdPpath ) ]
-            elif setup['stdP']['signal limit'] == 'both' :
-                stdPpath_weak = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
-                command_weak = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d %s %s\n'
-                                 % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , Gpath , stdPpath_weak ) ]
-                stdPpath_strong = workdir + '/GW_slope_%d/%s/stdP/stdP_lmax_%d_strong.pkl' % ( slope , IJ , setup['stdP']['lmax'] )
-                command_strong = [ './x_stdP.py --regMethod %d --regCutoff %s --lmax %d --strong_signal --Spath %s %s %s\n'
-                                   % ( setup['stdP']['regMethod'] , setup['stdP']['regCutoff'] , setup['stdP']['lmax'] , setup['stdP']['Spath'] , Gpath , stdPpath_strong ) ] 
-                command = command_weak + command_strong
-            jobname = 'do_stdP_slope_%d_IJ_%s' % ( slope , IJ )
-            file = open( '%s.sub' % jobname , 'w' )
-            file.writelines( [ '#!/bin/bash\n' ,
-                               '#PBS -N %s\n' % jobname ,
-                               '#PBS -o %s.out\n' % jobname ,
-                               '#PBS -j oe\n' ,
-                               '#PBS -q compute\n' ,
-                               '#PBS -l nodes=1:ppn=1\n' ,
-                               '#PBS -l walltime=10:00:00\n' , '\n' ,
-                               'cd $PBS_O_WORKDIR\n' , '\n' ] + command + [ "echo 'do_stdP done'" ]
-                             ) ; file.close()
-            file = open( '%s.out' % jobname , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
-            print 'Submitting job for %s...' % jobname ; os.system( 'qsub %s.sub' % jobname ) ; print 'done.'
-    os.chdir( workdir )
 
 
 
@@ -442,44 +564,6 @@ if options.plot_singular_values :
 
 
 
-if options.do_temp_optimals :
-    os.chdir( workdir )
-    for slope in setup['temp_optimals']['GWslopes'] :
-        for IJ in setup['temp_optimals']['IJs'] :
-            jobname_do_PP = 'do_PP_slope_%d_IJ_%s' % ( slope , IJ )
-            jobname_do_stdPP = 'do_stdPP_slope_%d_IJ_%s' % ( slope , IJ )
-            jobname_x_S = 'x_S_slope_%d_IJ_%s' % ( slope , IJ )
-            print 'Waiting for do_PP, do_stdPP and x_S to finish for lope_%d IJ_%s...' % ( slope , IJ )
-            while True :
-                files = [ open( '%s.out' % jobname , 'r' ) for jobname
-                          in [ jobname_do_PP , jobname_do_stdPP , jobname_x_S ] ]
-                dones = [ file.readlines()[-1] for file in files ]
-                [ file.close() for file in files ]
-                if dones == [ 'do_PP done\n' , 'do_stdPP done\n' , 'done\n' ] :
-                    print 'done' ; break
-                else :
-                    time.sleep( 5 ) ; continue
-            print 'Calculating optimal clean map and standard deviation from daily estimates...'                    
-            os.system( 'cp %s .' % ( execdir + '/x_temp_optimals.py' ) )
-            PPdir = workdir + '/GW_slope_%d/%s/PP' % ( slope , IJ )
-            stdPPdir = workdir + '/GW_slope_%d/%s/stdPP' % ( slope , IJ )
-            SSdir = workdir + '/GW_slope_%d/%s/SS' % ( slope , IJ )
-            sumdir = workdir + '/GW_slope_%d/%s/optimals/summary_lmax_%d.pkl' % ( slope , IJ , setup['temp_optimals']['lmax'] )
-            jobname = 'do_optimals_slope_%d_IJ_%s' % ( slope , IJ )
-            file = open( '%s.sub' % jobname , 'w' )
-            file.writelines( [ '#!/bin/bash\n' ,
-                               '#PBS -N %s\n' % jobname ,
-                               '#PBS -o %s.out\n' % jobname , '#PBS -j oe\n' ,
-                               '#PBS -q compute\n' ,
-                               '#PBS -l nodes=1:ppn=1\n' , '#PBS -l walltime=10:00:00\n' , '\n' , 
-                               'cd $PBS_O_WORKDIR\n' , '\n' ,
-                               ( './x_temp_optimals.py ' + '-d%d '*len(setup['temp_optimals']['days'])
-                                 + '--lmax %d %s %s %s %s\n' ) %
-                               tuple( setup['temp_optimals']['days'] + [ setup['temp_optimals']['lmax'] ,
-                                          PPdir , stdPPdir , SSdir , sumdir ] ) ,
-                               '\n' , "echo 'do_temp_optimals done'" ] ) ; file.close()
-            file = open( '%s.out' % jobname , 'w' ) ; file.write( 'dummy output file' ) ; file.close()
-            print 'Submitting job for %s...' % jobname ; os.system( 'qsub %s.sub' % jobname ) ; print 'done.'
-    os.chdir( workdir )
+
 
 
