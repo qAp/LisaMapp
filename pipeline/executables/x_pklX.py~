@@ -114,8 +114,6 @@ file = open( Xpath , 'wb') ; cpkl.dump( map_X , file , -1 ) ; file.close()
 days_skippedpath = Xdir + 'days_skipped.pkl'
 file = open( days_skippedpath , 'wb' ) ; cpkl.dump( days_skipped , file , -1 ) ; file.close()
 
-file = open( Xdir + '/x_pklX_FIN.pkl' , 'rb' ) ; FIN = cpkl.load( file ) ; file.close()
-FIN += [ 1 ] ; file = open( Xdir + '/x_pklX_FIN.pkl' , 'wb' ) ; cpkl.dump( FIN , file , -1 ) ; file.close()
 
 
 

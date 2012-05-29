@@ -43,7 +43,7 @@ avgpsd['days'] = range( 1 , 365 + 1 )
 
 """ do_X : Maximum likelihood estimation of X, the dirty map """
 X = {}
-X['orfdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/sample_glms/'
+X['orfdir'] = ''   #should contain directories like AA, AE, AT, etc.
 X['IJs'] = [ 'AE' ]# , 'AT' , 'ET' ] #[ 'AA' , 'AE' , 'AT' , 'EE' , 'ET' , 'TT' ]
 X['days'] = range( 1 , 365 + 1 )
 X['GWslopes'] = [ 0 ]
@@ -54,7 +54,7 @@ X['flow'] , X['fhigh'] = 1.74e-4 , 4.998e-1
 
 """ do_G : Maximum likelihood estimation of G, the Fisher Matrix """
 G = {}
-G['orfdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/sample_glms/'
+G['orfdir'] = ''  #should contain directories like AA, AE, AT, etc.
 G['IJs'] = [ 'AE' ]# , 'AT' , 'ET' ] #[ 'AA' , 'AE' , 'AT' , 'EE' , 'ET' , 'TT' ]
 G['days'] = range( 1 , 365+1 )
 G['GWslopes'] = [ 0 ]
@@ -65,7 +65,7 @@ G['flow'] , G['fhigh'] = 1.74e-4 , 4.998e-1
 """ do_S : The 'Psi' matrix in the bias of the clean map's covariance in the strong-signal limit (only available analytically, so use x_analyse_test.py) """
 S = {}
 S['csddir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/sample_outputs/uncorrelated_white_noises_same_white_signal/stime_0.5_N_86400_for_days/csd_ana/'
-S['orfdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/sample_glms/'
+S['orfdir'] = ''  #should contain directories like AA, AE, AT, etc.
 S['IJs'] = [ 'AE' ]# , 'AT' , 'ET' ]
 S['days'] = range( 1 , 365+1 )
 S['GWslopes'] = [ 0 ]

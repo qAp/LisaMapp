@@ -8,7 +8,7 @@ import cPickle as cpkl
 setup = {}
 
 """ Where are the executables for analysis?"""
-setup['execdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/temp/analyse_uncorrelated_white_noises_same_white_signal/'
+setup['execdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/Mapp_codes/pipeline/executables/'
 
 """ Where are the time-series? """
 setup['tsdir'] = '/gpfs1/JC0311443/workhere/stochasGW/Mapp/labs/sample_outputs/uncorrelated_white_noises_same_white_signal/stime_0.5_N_86400_for_days/data/'

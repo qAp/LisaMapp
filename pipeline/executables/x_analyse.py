@@ -151,7 +151,7 @@ if options.do_X :
     for slope in setup['X']['GWslopes'] :
         for IJ in setup['X']['IJs'] :
             print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
-            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
+            orfIJdir = orfdir + '/%s' % IJ
             Xdir = workdir + '/GW_slope_%d/%s/X/' % ( slope , IJ )
             cIJdir = workdir + '/GW_slope_%d/%s/cIJ/' % ( slope , IJ )
             jobname = submitname + '_slope_%d_IJ_%s' % ( slope , IJ )
@@ -200,7 +200,7 @@ if options.do_G :
     for slope in setup['G']['GWslopes'] :
         for IJ in setup['G']['IJs'] :
             print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
-            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
+            orfIJdir = orfdir + '/%s' % IJ
             Gdir = workdir + '/GW_slope_%d/%s/G/' % ( slope , IJ )
             cIIdir = workdir + '/GW_slope_%d/%s/cII/' % ( slope , IJ )            
             jobname = submitname+'_slope_%d_IJ_%s' % ( slope , IJ )
@@ -247,7 +247,7 @@ if options.do_S :
     for slope in setup['S']['GWslopes'] :
         for IJ in setup['S']['IJs'] :
             print ( 'GW spectral slope = %d' % slope ) , ( 'IJ = %s' % IJ )
-            orfIJdir = orfdir + '/tdiI_%s_tdiJ_%s_lmax_0_f0_0.000174_df_0.000174_Nf_5759_g00_9/data/' % tuple( IJ )
+            orfIJdir = orfdir + '/%s' % IJ
             Spath = workdir + '/GW_slope_%d/%s/S/S.pkl' % ( slope , IJ )            
             jobname = submitname+'_slope_%d_IJ_%s' % ( slope , IJ )
             file = open( jobname+'.sub' , 'w' )

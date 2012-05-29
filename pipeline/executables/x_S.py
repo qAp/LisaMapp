@@ -49,7 +49,7 @@ for day in options.days :
     print '~~~~~~~~~~ Day %d ~~~~~' % day
 
     csdpath = csddir + '/d%03d.pkl' % day
-    orfpath = orfdir + '/orf_d%03d.pkl' % day
+    orfpath = orfdir + '/d%03d.pkl' % day
     psdpath = psddir + '/d%03d.pkl' % day
 
     if csdpath not in glob.glob( csdpath ) :
