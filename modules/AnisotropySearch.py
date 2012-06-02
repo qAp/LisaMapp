@@ -291,9 +291,8 @@ def coarsefrequency( *fcoarsables ):
     cadences = [ Qf.Cadence1 for Qf in Qfs ]
     cad_fcos = zip( cadences , Qfs )
     cad_fcos.sort() ; cad_fcos.reverse() ; dF = cad_fcos[0][0] ; "This finds the coarsest cadence."
-    
-    roughones = Qfs[ : cadences.count( dF ) ]
-    fineones = Qfs[ cadences.count( dF ) : ] ; "Arrays sorted into those with the coarsest (rough ones), and those with finer cadences (fine ones)."
+    roughones = [ duh[1] for duh in cad_fcos[ :cadences.count(dF) ] ] 
+    fineones = [ duh[1] for duh in cad_fcos[ cadences.count(dF): ] ] "Arrays sorted into those with the coarsest (rough ones), and those with finer cadences (fine ones)."
 
     Flows = [ roughone.Offset1 - roughone.Cadence1 / 2 for roughone in roughones ]
     Flo_rous = zip( Flows , roughones )
@@ -312,7 +311,7 @@ def coarsefrequency( *fcoarsables ):
             index_low = 0
         else :
             index_low = int( np.ceil( lowerdiff ) ) ; "Index of the lowest bin from A whose lower edge is above the highest lower edge among the fine ones."
-
+            
 
     fhighs = [ Qf.data[-1] + Qf.Cadence1 / 2 for Qf in Qfs ]
     fhighs.sort() 
