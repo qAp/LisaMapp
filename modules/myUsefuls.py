@@ -131,6 +131,8 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
         w , V = sp_linalg.eig( C )
         for m in range( w.shape[0] ) :
             w[m] = np.real( w[m] )
+            if np.abs(w[m]) / np.max(w) < 1e-10 :
+                w[m] = 0
             if w[m] < 0 :
                 print 'Negative eigenvalue! Simulating unpysical signal...'
         print w
