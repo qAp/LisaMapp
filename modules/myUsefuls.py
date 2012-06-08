@@ -129,9 +129,11 @@ def get_noise_freq_domain_CovarMatrix( comatrix , df , inittime , parityN , seed
         if not np.allclose( C , np.conj( np.transpose( C ) ) ) :
             print "Covariance matrix NOT Hermitian! Unphysical."        
         w , V = sp_linalg.eig( C )
-        for ww in w :
-            if ww < 0 :
-                print "Negative Eigenvalue, trying to simulate unphysical signal!"
+        for m in range( w.shape[0] ) :
+            w[m] = np.real( w[m] )
+            if w[m] < 0 :
+                print 'Negative eigenvalue! Simulating unpysical signal...'
+        print w
         ntilde_p[ :,k ] =  np.conj( np.sqrt( N / (2*stime) ) * np.dot( V , np.dot( np.sqrt( np.diag( w ) ) , zs[ :,k ] ) ) )
     
     zerofill = np.zeros( ( Nts , 1 ) )
