@@ -292,7 +292,7 @@ def coarsefrequency( *fcoarsables ):
     cad_fcos = zip( cadences , Qfs )
     cad_fcos.sort() ; cad_fcos.reverse() ; dF = cad_fcos[0][0] ; "This finds the coarsest cadence."
     roughones = [ duh[1] for duh in cad_fcos[ :cadences.count(dF) ] ] 
-    fineones = [ duh[1] for duh in cad_fcos[ cadences.count(dF): ] ] "Arrays sorted into those with the coarsest (rough ones), and those with finer cadences (fine ones)."
+    fineones = [ duh[1] for duh in cad_fcos[ cadences.count(dF): ] ] ; "Arrays sorted into those with the coarsest (rough ones), and those with finer cadences (fine ones)."
 
     Flows = [ roughone.Offset1 - roughone.Cadence1 / 2 for roughone in roughones ]
     Flo_rous = zip( Flows , roughones )
