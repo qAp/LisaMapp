@@ -4,12 +4,11 @@ import glob
 import sys
 import cPickle as cpkl
 import AnisotropySearch as AS
+import optparse 
 import mymlab 
-from optparse import OptionParser
 
 
-
-parser = OptionParser( "usage: ./x_pklTS_CSD.py TSDIR CSDDIR" )
+parser = optparse.OptionParser( "usage: ./x_pklTS_CSD.py TSDIR CSDDIR" )
 parser.add_option( '--scale_ts' , action='store' , dest='scale_ts' , type='float' , default=1 , nargs=1 ,
                    help='Scale the time-series beforehand.' )
 parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' , nargs = 1 ,

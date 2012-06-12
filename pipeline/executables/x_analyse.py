@@ -87,7 +87,7 @@ if options.do_csd :
                        '#PBS -l walltime=10:00:00\n' , '\n' ,
                        'cd $PBS_O_WORKDIR\n' , '\n' ,
                        ( './'+submitname+'.py ' + '-d%d '*len(days) + '--segduration %f --scale_ts %f %s %s\n' )
-                       % tuple( days + [ segduration , scale_ts , tsdir , psddir ] ) ,
+                       % tuple( days + [ segduration , scale_ts , tsdir , csddir ] ) ,
                        '\n' ,
                        "echo 'psd done'" ] )
     file.close()  

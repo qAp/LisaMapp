@@ -36,9 +36,9 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
     indxp = AS.getMLvec( lmax , m='p' )
     SpHimag = np.zeros( ( len(indxp) , f.shape[0] ) , dtype=complex )
     if IJ in [ 'AA' , 'EE' , 'TT' ] :
-        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 79950.67947 / np.sqrt( 2*np.pi )
+        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 1440. / np.sqrt( 2*np.pi )
     elif IJ in [ 'AE','AT','EA','ET','TA','TE' ] :
-        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 144. / np.sqrt( 2*np.pi )
+        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 2.88 / np.sqrt( 2*np.pi )
     """ ###### """
     orfdict = {'OrfMultipleMoments':{ 'ntrunc':lmax , 'f':f , 'Antenna':IJ , 'real': SpHreal , 'imag': SpHimag } }
     orfdir = os.path.dirname( orfpath )
