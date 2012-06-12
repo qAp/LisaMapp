@@ -32,15 +32,11 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
     OUTPUT:
     None
     """
-    """ This is where you define SpHs of real and imaginary parts of ORF. Note that the the value returned is for the SpH defined in pyspharm.  As it is below, all ORFs used are actually AA's on DAY001. """
-    import synthlisa
-    import myLISAmodule as mlisar
-    eta0 , xi0 , sw , lisa_t0 = 0 , 0 , 1 , 0 ; lisa = synthlisa.EccentricInclined( eta0 , xi0 , sw , lisa_t0 )
-    nlon , nlat = 120 , 61 ; sky  = mlisar.mySpharmt( nlon , nlat )
-    lisky = mlisar.LISA_in_the_Sky( lisa , sky )
-    SpHreal , SpHimag = lisky.get_SpHs( lmax , 'tdiORF' ,
-                                        ('Michelson','G2','A','1') , ('Michelson','G2','A','1') ,
-                                        f , t = 0.5*86400. )
+    """ ###### This is where you define SpHs of real and imaginary parts of ORF. Note that the the value returned is for the SpH defined in pyspharm."""  
+    indxp = AS.getMLvec( lmax , m='p' )
+    SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 1e5 * f / np.sqrt( 2*np.pi )
+    SpHimag = np.zeros( ( len(indxp) , f.shape[0] ) , dtype=complex )
+    """ ###### """
     orfdict = {'OrfMultipleMoments':{ 'ntrunc':lmax , 'f':f , 'Antenna':IJ , 'real': SpHreal , 'imag': SpHimag } }
     orfdir = os.path.dirname( orfpath )
     if orfdir == '' :

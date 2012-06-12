@@ -34,8 +34,11 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
     """
     """ ###### This is where you define SpHs of real and imaginary parts of ORF. Note that the the value returned is for the SpH defined in pyspharm."""  
     indxp = AS.getMLvec( lmax , m='p' )
-    SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 1e5 * f / np.sqrt( 2*np.pi )
     SpHimag = np.zeros( ( len(indxp) , f.shape[0] ) , dtype=complex )
+    if IJ in [ 'AA' , 'EE' , 'TT' ] :
+        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 79950.67947 / np.sqrt( 2*np.pi )
+    elif IJ in [ 'AE','AT','EA','ET','TA','TE' ] :
+        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 144. / np.sqrt( 2*np.pi )
     """ ###### """
     orfdict = {'OrfMultipleMoments':{ 'ntrunc':lmax , 'f':f , 'Antenna':IJ , 'real': SpHreal , 'imag': SpHimag } }
     orfdir = os.path.dirname( orfpath )
