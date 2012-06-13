@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import myUsefuls as mufls
 import time
-
+import subprocess
 
 days = range( 1 , 5+1 )
 stime = 0.5
@@ -13,12 +13,23 @@ seed = 100
 Tseg = 43200
 tsdir = 'data'
 Ntogroup = 2
+afterokpath = ''
+jobidspath = ''
 
 
 
 days_batches = mufls.divide_days_in_batches_reverse_pairup( days , Ntogroup )
 Nb = len( days_batches )    
 
+if afterokpath in ['','None',None,0] :
+    afteroks = ['']
+elif afterokpath not in glob.glob( afterokpath ) :
+    raise Exception, 'The file you specified that contains IDs of jobs to be completed first cannot be found.'
+else :
+    file = open( afterokpath , 'r' ) ; lines = file.readlines() ; file.close()
+    afteroks = [ line.rstrip() for line in lines ]
+
+jobids = []
 for b in range( Nb ) :
     batch = b + 1
     print "Preparing and submitting batch %d" % batch
@@ -40,7 +51,14 @@ for b in range( Nb ) :
                            '#PBS -l walltime=10:00:00\n' , 
                            'cd $PBS_O_WORKDIR\n' , '\n' ] +
                          commands + [ 'echo done' ] ) ; file.close()
-        file = open( submitname + '.out' , 'w' ) ; file.write( 'dummy output' ) ; file.close()
-        os.system( 'qsub %s' % ( submitname + '.sub' ) ) ; print 'done'
+        p = subprocess.Popen( 'qsub -W depend=afterok:%s %s' %
+                              ( ':'.join( afteroks ) , submitname + '.sub' ) ,
+                              shell=True , stdout=subprocess.PIPE )
+        jobids += [ p.communicate()[0].rstrip() ]
+        
     time.sleep( 0.8 )
 
+file = open( jobidspath , 'w' )
+for k in range( len( jobids ) ) :
+    print >> file , '%s' % jobids[k]
+file.close()
