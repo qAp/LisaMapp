@@ -668,7 +668,8 @@ class XXX(object):
         pII , pJJ  = pII.coarsegrain( **inputs ) , pJJ.coarsegrain( **inputs )
         csdata = csdata.coarsegrain( **inputs )
 ######################## save csdata , pII , PJJ ####################(1)
-        cIJdict = { 'f':self.fcoarse , 2*self.pair[0]:pII , 2*self.pair[1]:pJJ , self.pair:csdata }
+        cIJdict = { 'f':self.fcoarse , 2*self.pair[0]:pII , 2*self.pair[1]:pJJ , self.pair:csdata ,
+                    'g'+self.pair : glm }
         if self.cIJdir not in glob.glob( self.cIJdir ) :
             os.system( 'mkdir -p %s' % self.cIJdir )
         file = open( self.cIJdir + '/d%03d.pkl' % self.day , 'wb' )
@@ -697,6 +698,7 @@ class XXX(object):
         
         ilow  = np.round( (flow - self.fcoarse.Offset1) / self.fcoarse.Cadence1 )
         ihigh = np.round( (fhigh - self.fcoarse.Offset1) / self.fcoarse.Cadence1 )
+        print 'ilow , ihigh' , ilow , ihigh
         data = data[ : , ilow : ihigh + 1 ]
         fdata = self.fcoarse.data[ ilow : ihigh + 1 ]
         fscale = {'Offset1' : fdata[0] , 
