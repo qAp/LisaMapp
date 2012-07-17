@@ -1026,20 +1026,21 @@ class GGG(object):
                    'N1'       : len( self.fcoarse.data  ) }
         glm = glm.coarsegrain( **inputs )
         pII , pJJ = pII.coarsegrain( **inputs ) , pJJ.coarsegrain( **inputs )
-######################### save pII , PJJ ###################################
-#        cIIdict = { 'f':self.fcoarse , 2*self.pair[0]:pII , 2*self.pair[1]:pJJ }
-#        if self.cIIdir not in glob.glob( self.cIIdir ) :
-#            os.system( 'mkdir -p %s' % self.cIIdir )
-#        file = open( self.cIIdir + '/d%03d.pkl' % self.day , 'wb' )
-#        cpkl.dump( cIIdict , file , -1 ) ; file.close()
-############################################################################
+######################## save pII , PJJ ###################################
+        cIIdict = { 'f':self.fcoarse , 2*self.pair[0]:pII , 2*self.pair[1]:pJJ ,
+                    'g'+self.pair : glm }
+        if self.cIIdir not in glob.glob( self.cIIdir ) :
+            os.system( 'mkdir -p %s' % self.cIIdir )
+        file = open( self.cIIdir + '/d%03d.pkl' % self.day , 'wb' )
+        cpkl.dump( cIIdict , file , -1 ) ; file.close()
+###########################################################################
         H = self.fcoarse.data**self.alpha
 
         ilow  = int( np.round( (flow - self.fcoarse.Offset1) /
                                   self.fcoarse.Cadence1 ) )
         ihigh = int( np.round( (fhigh - self.fcoarse.Offset1) /
                                   self.fcoarse.Cadence1 ) )
-
+        print 'ilow , ihigh' , ilow , ihigh
 
         H2oPP = H**2 / ( np.real( pII.data ) * np.real( pJJ.data ) )
 

@@ -57,7 +57,7 @@ for day in options.days :
 
     tspath  = tsdir  + '/d%03d.pkl' % day
     psdpath = psddir + '/d%03d.pkl' % day
-    orfpath = orfdir + '/orf_d%03d.pkl' % day
+    orfpath = orfdir + '/d%03d.pkl' % day
 
     if tspath not in glob.glob( tspath ) :
         print 'Time-series not available on day %03d' % day ; days_skipped += [ day ] ; continue

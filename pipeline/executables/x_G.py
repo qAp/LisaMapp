@@ -86,6 +86,7 @@ for day in options.days :
         elif options.window == 'hanning' :
             window = np.hanning( N )
         norm = ( np.sum( window**2 ) / N )**2 / ( np.sum( window**4 ) / N ) * T*df
+        print 'norm' , norm
         firstavailable = False
 
     dGdata = norm * GG.data
