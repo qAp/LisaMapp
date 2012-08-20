@@ -17,7 +17,7 @@ first_iter = True
 for day in days :
     print 'Day %d' % day
     for seed in seeds :
-        csdpath = 'analysis_seed_%d_stime_0.5_hanning_ORFsim/GW_slope_0/AE/cII/d%03d.pkl' % ( seed , day )
+        csdpath = 'analysis_seed_%d_stime_0.5_hanning/GW_slope_0/AE/cII/d%03d.pkl' % ( seed , day )
         file = open( csdpath , 'rb' )
         csddict = cpkl.load( file )
         file.close()

@@ -5,14 +5,14 @@ import glob
 import numpy as np
 
 
-cIJ_seedsavg_daysavg_path = '..//cIJ_seedsavg_daysavg/avgsd.dat'
-cII_seedsavg_daysavg_path = '..//cII_seedsavg_daysavg/avgsd.dat'
+sd_seedsavg_daysavg_cIJ_path = '..//sd_seedsavg_daysavg_cIJ/avgsd.dat'
+sd_seedsavg_daysavg_cII_path = '..//sd_seedsavg_daysavg_cII/avgsd.dat'
 cIJana_path = '..//expectation_values/cIJ_ana/anasd.dat'
 P00 = 1 / 90.
 
 
 
-file = open( cII_seedsavg_daysavg_path , 'r' )
+file = open( sd_seedsavg_daysavg_cII_path , 'r' )
 lines = file.readlines()
 file.close()
 cIItable = []
@@ -27,7 +27,7 @@ P22_cII = cIItable[:,5] #+ 1j*cIItable[:,6]
 
 
 
-file = open( cIJ_seedsavg_daysavg_path , 'r' )
+file = open( sd_seedsavg_daysavg_cIJ_path , 'r' )
 lines = file.readlines()
 file.close()
 

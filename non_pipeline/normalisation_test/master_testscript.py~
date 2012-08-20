@@ -76,7 +76,7 @@ for seed in seeds :
                                   shell=True , stdout=subprocess.PIPE ,
                                   stderr=subprocess.PIPE )
             stdout , stderr = p.communicate()
-            if len(stdout)==0 and stderr==('qstat: Unknown Job Id %s\n' % jobid) :
+            if len(stdout)==0 and stderr==('qstat: Unknown Job Id %s' % jobid) :
                 jobxits += [1]
             elif '\n' in stdout :
                 qstats = [ line.strip() for line in stdout.split( '\n' ) ]

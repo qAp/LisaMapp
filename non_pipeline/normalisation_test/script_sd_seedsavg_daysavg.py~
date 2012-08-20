@@ -31,7 +31,7 @@ for day in days :
             P22 += psddict['EE'].data / (Nseeds*Ndays)
             P33 += psddict['TT'].data / (Nseeds*Ndays)
 
-        csdpath = 'analysis_seed_%d_stime_0.5_hanning/csd/d%03d.pkl' % ( seed , day )
+        csdpath = 'analysis_seed_%d_stime_0.5_hanning_ORFsim/csd/d%03d.pkl' % ( seed , day )
         file = open( csdpath , 'rb' )
         csddict = cpkl.load( file )
         file.close()
