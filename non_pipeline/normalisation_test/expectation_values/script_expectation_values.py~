@@ -12,7 +12,7 @@ import synthlisa
 P00 = 1/90.
 tditype , tdigen = 'Michelson' , 'G2'
 stime = 8.0
-norm_Hgw, GWslope = 1e-10, -3
+GWslope = 0
 
 
 fNyq = 1 / (2*stime)
@@ -101,23 +101,23 @@ def get_gTT( f ) :
 Power spectral densities
 """
 def get_PhAhA( f ) :
-    return P00 * get_gAA(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gAA(f) * Hgw(f, GWslope)
 def get_PhAhE( f ) :
-    return P00 * get_gAE(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gAE(f) * Hgw(f, GWslope)
 def get_PhAhT( f ) :
-    return P00 * get_gAT(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gAT(f) * Hgw(f, GWslope)
 def get_PhEhA( f ) :
-    return P00 * get_gEA(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gEA(f) * Hgw(f, GWslope)
 def get_PhEhE( f ) :
-    return P00 * get_gEE(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gEE(f) * Hgw(f, GWslope)
 def get_PhEhT( f ) :
-    return P00 * get_gET(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gET(f) * Hgw(f, GWslope)
 def get_PhThA( f ) :
-    return P00 * get_gTA(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gTA(f) * Hgw(f, GWslope)
 def get_PhThE( f ) :
-    return P00 * get_gTE(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gTE(f) * Hgw(f, GWslope)
 def get_PhThT( f ) :
-    return P00 * get_gTT(f) * Hgw(f, GWslope, norm_Hgw)
+    return P00 * get_gTT(f) * Hgw(f, GWslope)
 
 def get_PnAnA( f ) :
     return 16e39 * mlisar.get_tdiNSD( tditype , tdigen , 'A' , 'A' , f )
@@ -267,20 +267,20 @@ file.close()
 """
 Write some g00(f)s to disk (what follows below will using the same set of g00(f) values)
 """
-n = 500
-df = 1 / ( n*stime )
-Nf = n / 2 - 1
-f = df + df * np.arange( Nf )
+#n = 500
+#df = 1 / ( n*stime )
+#Nf = n / 2 - 1
+#f = df + df * np.arange( Nf )
 
-##Or get coarse frequencies from an analysis run
-#file = open( '../analysis_seed_1_stime_0.5_hanning/GW_slope_0/AE/cIJ/d002.pkl' , 'rb' )
-#cIJdict = cpkl.load( file )
-#file.close()
-#df = cIJdict['f'].Cadence1
-#Nf = cIJdict['f'].data.shape[0]
-#f = cIJdict['f'].data
+#Or get coarse frequencies from an analysis run
+file = open( '../analysis_seed_1_stime_0.5_hanning/GW_slope_0/AE/cIJ/d002.pkl' , 'rb' )
+cIJdict = cpkl.load( file )
+file.close()
+df = cIJdict['f'].Cadence1
+Nf = cIJdict['f'].data.shape[0]
+f = cIJdict['f'].data
 
-H = Hgw(f, GWslope, norm_Hgw)
+H = Hgw(f, GWslope)
 
 gAApath = 'gAA_f0_%.6f_df_%.6f_Nf_%d.dat' % ( df , df , Nf ) 
 if gAApath not in glob.glob( gAApath ) :
