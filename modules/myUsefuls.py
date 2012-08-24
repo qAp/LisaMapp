@@ -254,7 +254,7 @@ def flatten( nested ) :
         yield nested
 
 
-def get_CovarMatrix( Nvar , Ppath , GWSpectralSlope=-3 , *orfpaths ) :
+def get_CovarMatrix( Nvar , Ppath , GWSpectralSlope=-3, H0=1.0, *orfpaths ) :
     """
     Returns Nvar x Nvar x Nf covariance matrix from convolving ORF with Plm
     It computes all independent P_{IJ}(f) = H(f)\gamma_{\alpha}^{IJ}(f)P_{\alpha}, and then forms the whole covariance matrix
@@ -262,6 +262,7 @@ def get_CovarMatrix( Nvar , Ppath , GWSpectralSlope=-3 , *orfpaths ) :
     Nvar --- number of variables of covariance matrix (if only A and E, Nvar=2)
     Ppath --- file path to the SkyMap object describing the P_{lm}s
     GWSpectralSlope --- gravitational wave background spectral slope
+    H0 --- normalisation constant for H(f)
     *orfpaths --- file paths to the tdiORF_SpHs of the independent cross-correlations
     OUTPUT:
     f --- frequencies ( Nfx1 numpy array )
@@ -277,7 +278,7 @@ def get_CovarMatrix( Nvar , Ppath , GWSpectralSlope=-3 , *orfpaths ) :
     else :
         f = orfs[0].f.data
     file = open( Ppath , 'rb' ) ; skymap = cpkl.load( file ) ; file.close
-    QPIJs = [ AS.Convolve( orf , skymap , GWSpectralSlope ) for orf in orfs ]
+    QPIJs = [ AS.Convolve( orf , skymap , GWSpectralSlope, H0 ) for orf in orfs ]
     PIJs = [ QPIJ.data for QPIJ in QPIJs ] ; PIJs.reverse()
     comatrix = np.zeros( ( Nvar , Nvar , f.shape[0] ) , dtype = complex )
     for k in range( Nvar ) :

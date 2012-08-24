@@ -25,6 +25,8 @@ parser.add_option( '--stime' , action='store' , dest='stime' , type='float' , na
                    help='sampling time of time-series' )
 parser.add_option( '--GWSpectralSlope' , action='store' , dest='GWSpectralSlope' , type='int' , nargs=1 , default=0 ,
                    help='GW background spectral slope' )
+parser.add_option( '--H0' , action='store' , dest='H0' , type='float' , nargs=1 , default=1.0 ,
+                   help='GW background spectrum normalisation constant' )
 parser.add_option( '--lmax' , action='store' , dest='lmax' , type='int' , nargs=1 , default=0 ,
                    help='Maximum degree l in SpH considered' )
 parser.add_option( '--seed' , action='store' , dest='seed' , type='string' , nargs=1 , default='random' ,
@@ -69,8 +71,8 @@ for day in options.days :
         Npd_before_segr = Npd_before_today + s*2*Nvar*freqdict['Nf']
         tl , tsl = tsim.simulate_AETnoise_from_arbitrary_SpH(duration,options.stime,
                                                              t0 + (s-1)*duration/2,
-                                                             options.GWSpectralSlope,
-                                                             Ppath,options.lmax,
+                                                             options.GWSpectralSlope, options.H0,
+                                                             Ppath, options.lmax,
                                                              options.seed,
                                                              Npd_before_segl,
                                                              Nvar,
@@ -78,8 +80,8 @@ for day in options.days :
                                                              *orfpaths )
         tr , tsr = tsim.simulate_AETnoise_from_arbitrary_SpH(duration,options.stime,
                                                              t0 + s*duration/2,
-                                                             options.GWSpectralSlope,
-                                                             Ppath,options.lmax,
+                                                             options.GWSpectralSlope, options.H0,
+                                                             Ppath, options.lmax,
                                                              options.seed,
                                                              Npd_before_segr,
                                                              Nvar,

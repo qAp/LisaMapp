@@ -38,7 +38,7 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
     if IJ in [ 'AA' , 'EE' ,  'TT' ] :
         SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 288. / np.sqrt( 2*np.pi )
     elif IJ in [ 'AT','ET','TA','TE', 'AE' , 'EA' ] :
-        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 28.8 / np.sqrt( 2*np.pi )
+        SpHreal = np.ones( ( len(indxp) , f.shape[0] ) , dtype=complex ) * 288. / np.sqrt( 2*np.pi )
     """ ###### """
     orfdict = {'OrfMultipleMoments':{ 'ntrunc':lmax , 'f':f , 'Antenna':IJ , 'real': SpHreal , 'imag': SpHimag } }
     orfdir = os.path.dirname( orfpath )
@@ -53,7 +53,8 @@ def make_arbitrary_tdiORF_SpHs( orfpath , f , IJ='AA' , lmax=0 ) :
 
     
 def simulate_AETnoise_from_arbitrary_SpH( duration , stime , t0 ,
-                                          GWSpectralSlope , Ppath , lmax ,
+                                          GWSpectralSlope, H0,
+                                          Ppath , lmax ,
                                           seed , N_previous_draws ,
                                           Nvar , compute_ORF_SpHs ,
                                           *orfpaths ) :
@@ -66,6 +67,7 @@ def simulate_AETnoise_from_arbitrary_SpH( duration , stime , t0 ,
     stime -- sampling time 
     t0 --- initial time
     GWSpectralSlope --- GW background spectral slope
+    H0 --- normalisation constant for H(f)
     Ppath --- file path to SkyMap of P_{lm}s
     lmax --- maximum degree l in SpH considered
     seed --- seed for the random number generator: 'random' or a positive integer
@@ -86,9 +88,9 @@ def simulate_AETnoise_from_arbitrary_SpH( duration , stime , t0 ,
             raise InputError , 'You must enter at least %d orfpaths!' % Nindies
         [ make_arbitrary_tdiORF_SpHs( orfpaths[k] , freqdict['f'] , IJ=IJs[k] , lmax=lmax )
           for k in range( Nindies ) ]
-        f , comatrix = mufls.get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
+        f , comatrix = mufls.get_CovarMatrix( Nvar , Ppath , GWSpectralSlope, H0 , *orfpaths )
     else :
-        f , comatrix = mufls.get_CovarMatrix( Nvar , Ppath , GWSpectralSlope , *orfpaths )
+        f , comatrix = mufls.get_CovarMatrix( Nvar , Ppath , GWSpectralSlope, H0 , *orfpaths )
         if not np.allclose( f , freqdict['f'] ) :
             raise InputError , 'Frequencies of loaded covariance matrix do not match those of the fft.  Try computing the tdiORF_SpHs first with compute_ORF_SpHs=True'
     t , n = mufls.get_noise_freq_domain_CovarMatrix( comatrix , freqdict['df'] , t0 ,
