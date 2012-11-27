@@ -550,7 +550,7 @@ class XXX(object):
 
     """
     def __init__(self, OrfMultipleMoments , PSDDIC , TimeSeries , 
-                 GwSpectralSlope ,
+                 H0, GwSpectralSlope ,
                  day , cIJdir='./' , XXXdir='./' ):
         """
         Create an instance of the class XXX
@@ -558,11 +558,13 @@ class XXX(object):
         OrfMultipleMoments -- OrfMultipleMoments object
         PSDDIC -- PSD dictionary(these are saved in a .pkl file)
         TimeSeries -- TimeSeries object
+        H0 -- constant factor in GW spectral function H(f)
         GWSpectralSlope -- GW spectral slope
         """
         self.ts      = TimeSeries
         self.psd     = PSDDIC
         self.orf     = OrfMultipleMoments
+        self.H0 = H0
         self.alpha   = GwSpectralSlope
         self.pair    = self.orf.Antenna 
 ######################################################################
@@ -676,7 +678,7 @@ class XXX(object):
         cpkl.dump( cIJdict , file , -1 ) ; file.close()
 ###########################################################################
 
-        H = self.fcoarse.data**self.alpha
+        H = self.H0 * self.fcoarse.data**self.alpha
 
 ########## Estimator containing only +ve frequencies ######################
 #        HoPP = H / ( np.real( pII.data ) * np.real( pJJ.data ) )
@@ -832,13 +834,14 @@ class XXX_test(object):
 
 
 
-def get_covariance_bias_matrix_for_the_day( orf , psd , csd , alpha , day , flow , fhigh , lmax ) :
+def get_covariance_bias_matrix_for_the_day( orf , psd , csd , H0, alpha , day , flow , fhigh , lmax ) :
     """
     returns the 'bias matrix' for the covariance of the estimators
     INPUT:
     orf --- OrfMultipleMoments object
     psd --- dictionary of psds
     csd --- dictionary of csds
+    H0 --- constant factor for GW spectral function H(f)
     alpha --- GW spectral slope
     day --- day
     flow --- lower limit of integration over frequency
@@ -860,7 +863,7 @@ def get_covariance_bias_matrix_for_the_day( orf , psd , csd , alpha , day , flow
     glm = glm.coarsegrain( **inputs )
     cIJ , pII , pJJ = cIJ.coarsegrain( **inputs ) , pII.coarsegrain( **inputs ) , pJJ.coarsegrain( **inputs )
 
-    H = fcoarse.data**alpha
+    H = H0 * fcoarse.data**alpha
     H2oP2P2 = H**2 / ( np.real( pII.data )**2 * np.real( pJJ.data )**2 )
 
     indxpn = getMLvec( lmax , 'pn' )
@@ -904,17 +907,19 @@ class GGG(object):
 
     
     """
-    def __init__(self, OrfMultipleMoments , PSDDIC , GwSpectralSlope , day , cIIdir='./' ):
+    def __init__(self, OrfMultipleMoments , PSDDIC , H0, GwSpectralSlope , day , cIIdir='./' ):
         """Create an instance of the class GGG
         
         Positional parameters:
         OrfMultipleMoments -- OrfMultipleMoments object
         PSDDIC -- PSD dictionary (these are saved in .pkl files)
+        H0 -- constant factor for GW spectral function H(f)
         GwSpectralSlope -- GW spectral slope
         
         """
         self.orf   = OrfMultipleMoments
         self.psd   = PSDDIC
+        self.H0 = H0
         self.alpha = GwSpectralSlope
         self.pair  = self.orf.Antenna
         self.day = day
@@ -975,7 +980,7 @@ class GGG(object):
                    'N1'       : len( self.fcoarse.data ) }
         glm = glm.coarsegrain( **inputs )
         pII , pJJ = pII.coarsegrain( **inputs ) , pJJ.coarsegrain( **inputs )
-        H = self.fcoarse.data**self.alpha
+        H = self.H0 * self.fcoarse.data**self.alpha
 
         ml1m , ml2m = ( -ml1[0] , ml1[-1] ) , ( -ml2[0] , ml2[-1] )
         indxpn = getMLvec( self.orf.ntrunc , 'pn' )
@@ -1034,7 +1039,7 @@ class GGG(object):
         file = open( self.cIIdir + '/d%03d.pkl' % self.day , 'wb' )
         cpkl.dump( cIIdict , file , -1 ) ; file.close()
 ###########################################################################
-        H = self.fcoarse.data**self.alpha
+        H = self.H0 * self.fcoarse.data**self.alpha
 
         ilow  = int( np.round( (flow - self.fcoarse.Offset1) /
                                   self.fcoarse.Cadence1 ) )

@@ -20,6 +20,9 @@ parser = optparse.OptionParser( usage = usage )
 parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' , nargs=1 ,
                    help='Days to sum over' )
 
+parser.add_option('--H0', action='store', dest='H0', type='float', default=1.0, nargs=1,
+                  help='Constant factor for the GW spectral function H(f)')
+
 parser.add_option( '--GWslope' , action='store' , dest='GWslope' , type='int' , nargs=1 , default=0 ,
                    help='GW spectral slope' )
 
@@ -63,7 +66,9 @@ for day in options.days :
     file = open( csdpath , 'rb' ) ; csddict = cpkl.load( file ) ; file.close()
     file = open( psdpath , 'rb' ) ; psddict = cpkl.load( file ) ; file.close()
     
-    SSdata = AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict , options.GWslope , day , options.flow , options.fhigh , options.lmax )
+    SSdata = AS.get_covariance_bias_matrix_for_the_day( orf , psddict , csddict ,
+                                                        options.H0, options.GWslope ,
+                                                        day , options.flow , options.fhigh , options.lmax )
     
     if firstavailable :
         Sdata = np.zeros( SSdata.shape , dtype = SSdata.dtype )

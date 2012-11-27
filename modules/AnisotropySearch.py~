@@ -2010,11 +2010,11 @@ class XSkyMap( SkyMap ):
 #
 #    return cspectrum
     
-def Convolve( orf , skymap , GWSpectralSlope=-3 ) :
+def Convolve( orf , skymap , GWSpectralSlope=-3, H0=1.0 ) :
     lmax = min( orf.ntrunc , skymap.ntrunc )
     g = orf.getMultipleMoments( 'pn' , lmax )
     f = g.Offset1 + g.Cadence1 * np.arange( g.data.shape[1] )
-    H = f**GWSpectralSlope
+    H = H0 * f**GWSpectralSlope
     glm = g.data
     xlm = get_lmax_subset_from( skymap.xlm , lmax , axis=0 )
     data = H * np.sum( np.transpose( glm ) * xlm , 1 )

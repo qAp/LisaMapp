@@ -166,9 +166,11 @@ if options.do_X :
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
                                ( './x_pklX.py ' + '-d%d '*len(days) +
-                                 '--GWslope %d --scale_ts %f --flow %f --fhigh %f --lmax %d --window %s \
+                                 '--H0 %f --GWslope %d --scale_ts %f \
+                                 --flow %f --fhigh %f --lmax %d --window %s \
                                  %s %s %s %s %s\n')
-                               % tuple( days + [ slope , setup['scale_ts'] , setup['X']['flow'] ,
+                               % tuple( days + [ setup['X']['H0'], slope,
+                                                 setup['scale_ts'] , setup['X']['flow'] ,
                                                  setup['X']['fhigh'] , setup['X']['lmax'] ,
                                                  setup['X']['window'] ,
                                                  tsdir , orfIJdir , psddir , Xdir , cIJdir ] ) ,
@@ -215,8 +217,10 @@ if options.do_G :
                                'cd $PBS_O_WORKDIR\n' ,
                                '\n' ,
                                ( './x_G.py ' + '-d%d '*len(days) +
-                                 '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n')
-                               % tuple( days + [ slope , setup['G']['flow'] , setup['G']['fhigh'] ,
+                                 '--H0 %f --GWslope %d --flow %f --fhigh %f \
+                                 --lmax %d --window %s %s %s %s %s %s\n')
+                               % tuple( days + [ setup['G']['H0'], slope ,
+                                                 setup['G']['flow'] , setup['G']['fhigh'] ,
                                                  setup['G']['lmax'] , setup['X']['window'] ,
                                                  tsdir , orfIJdir , psddir , Gdir , cIIdir ] ) ,
                                'echo done' ] )
@@ -260,8 +264,10 @@ if options.do_S :
                                '#PBS -l walltime=5:00:00\n' ,
                                'cd $PBS_O_WORKDIR\n' , '\n' ,
                                ( './x_S.py ' + '-d%d '*len(days) +
-                                 '--GWslope %d --flow %f --fhigh %f --lmax %d --window %s %s %s %s %s %s\n' )
-                               % tuple( days + [ slope , setup['S']['flow'] , setup['S']['fhigh'] ,
+                                 '--H0 %f --GWslope %d --flow %f --fhigh %f \
+                                 --lmax %d --window %s %s %s %s %s %s\n' )
+                               % tuple( days + [ setup['S']['H0'], slope ,
+                                                 setup['S']['flow'] , setup['S']['fhigh'] ,
                                                  setup['S']['lmax'] , setup['X']['window'] ,
                                                  tsdir , csddir , orfIJdir , psddir , Spath ] ) ,
                                'echo done' ] )

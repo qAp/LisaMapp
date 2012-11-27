@@ -11,7 +11,7 @@ import scipy.integrate as  integrate
 
 
 reali_nums = range( 1 , 25+1 )
-
+GWslope = 
 
 "Expectation values (as calculated by expectation_values/script.py)"
 P00_ana = 1 / 90.
@@ -27,10 +27,10 @@ for r in reali_nums :
     print 'Working on realisation %d' % r
     workdir = 'analysis_seed_%d_stime_0.5_hanning/' % r
 
-    Ppath = workdir + '/GW_slope_0/AE/P/P_lmax_0.pkl'
-    stdPpath = workdir + '/GW_slope_0/AE/stdP/stdP_lmax_0_strong.pkl'
-    stdPwpath = workdir + '/GW_slope_0/AE/stdP/stdP_lmax_0.pkl'
-    sumpath = workdir + '/GW_slope_0/AE/optimals/summary_lmax_0.pkl'
+    Ppath = workdir + '/GW_slope_%d/AE/P/P_lmax_0.pkl' % GWslope
+    stdPpath = workdir + '/GW_slope_%d/AE/stdP/stdP_lmax_0_strong.pkl' % GWslope
+    stdPwpath = workdir + '/GW_slope_%d/AE/stdP/stdP_lmax_0.pkl' % GWslope
+    sumpath = workdir + '/GW_slope_%d/AE/optimals/summary_lmax_0.pkl' % GWslope
     
     file = open( Ppath , 'rb' ) ; P = cpkl.load( file ) ; file.close()
     file = open( stdPpath , 'rb' ) ; stdP = cpkl.load( file ) ; file.close()

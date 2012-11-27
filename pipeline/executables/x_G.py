@@ -23,6 +23,9 @@ parser.add_option( '--scale_ts' , action='store' , dest='scale_ts' , type='float
 parser.add_option( '-d' , '--day' , action='append' , dest='days' , type='int' , nargs=1 ,
                    help='Days to sum over for maximum likelihood estimator of G' )
 
+parser.add_option('--H0', action='store', dest='H0', type='float', default=1.0, nargs=1,
+                  help='Constant factor for the GW spectral function H(f)')
+
 parser.add_option( '--GWslope' , action='store' , dest='GWslope' , type='int' , default=0 , nargs=1 ,
                    help='Gravitational spectral slope' )
 
@@ -73,7 +76,7 @@ for day in options.days :
 
     orf = AS.OrfMultipleMoments( orfpath )
 
-    ggg = AS.GGG( orf , psddict , options.GWslope , day , cIIdir=cIIdir  )
+    ggg = AS.GGG( orf , psddict , options.H0, options.GWslope , day , cIIdir=cIIdir  )
     GG = ggg.getsummand( flow = options.flow , fhigh = options.fhigh , lmax= options.lmax )
 
     if firstavailable:

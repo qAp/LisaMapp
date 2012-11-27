@@ -25,7 +25,7 @@ sigP00optw_ana = 2.07233500415e-05
 results = []
 for r in reali_nums :
     print 'Working on realisation %d' % r
-    workdir = 'analysis_seed_%d_stime_0.5_hanning_ORFsim/' % r
+    workdir = 'analysis_seed_%d_stime_0.5_hanning/' % r
 
     Ppath = workdir + '/GW_slope_0/AE/P/P_lmax_0.pkl'
     stdPpath = workdir + '/GW_slope_0/AE/stdP/stdP_lmax_0_strong.pkl'
