@@ -80,7 +80,7 @@ for b in range( Nb ) :
                           ( ':'.join( afteroks ) , submitname + '.sub' ) ,
                           shell=True , stdout=subprocess.PIPE )
     jobids += [ p.communicate()[0].rstrip() ]
-    time.sleep( 2.0 )
+    time.sleep( 3.0 )
 
 file = open( jobidspath , 'w' )
 for k in range( len( jobids ) ) :
