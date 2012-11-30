@@ -109,6 +109,7 @@ plot_X['IJs'] = [ 'AE'  , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET'
 plot_X['GWslopes'] = [ 0 ]
 plot_X['lmax'] , plot_X['nlon'] , plot_X['nlat'] = 15 , 180 , 91
 plot_X['mapnorm'] = 1.
+plot_X['wait for X'] = True # True, False
 
 
 """ plot_P : Plot the clean map P """
@@ -117,13 +118,13 @@ plot_P['IJs'] = [ 'AE' , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' 
 plot_P['GWslopes'] = [ 0 ]
 plot_P['lmax'] , plot_P['nlon'] , plot_P['nlat'] = 0 , 180 , 91
 plot_P['mapnorm'] = 1e-40
-
+plot_P['wait for P'] = True #True, False
 
 """ plot_sigma_avg : Plot the sky-average standard deviation of Plm """
 plot_sigma_avg = {}
 plot_sigma_avg['IJs'] = [ 'AE' ] # , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
 plot_sigma_avg['GWslopes'] = [ 0 ]
-
+plot_sigma_avg['wait for sigma_avg'] = True #True, False
 
 """ plot_sigmamap : Plot sigmamap """
 plot_sigmamap = {}
@@ -131,6 +132,7 @@ plot_sigmamap['IJs'] = [ 'AE' ] # , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 
 plot_sigmamap['GWslopes'] = [ 0 ]
 plot_sigmamap['lmax'] , plot_sigmamap['nlon'] , plot_sigmamap['nlat'] = 15 , 180 , 91
 plot_sigmamap['mapnorm'] = '1.'
+plot_sigmamap['wait for sigmamap'] = True # True, False
 
 """ plot_SNRmap : Plot SNRmap """
 plot_SNRmap = {}
@@ -138,6 +140,7 @@ plot_SNRmap['IJs'] = [ 'AE' ] # , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'A
 plot_SNRmap['GWslopes'] = [ 0 ]
 plot_SNRmap['lmax'] , plot_SNRmap['nlon'] , plot_SNRmap['nlat'] = 15 , 180 , 91
 plot_SNRmap['mapnorm'] = 1.
+plot_SNRmap['wait for SNRmap'] = True #True, False
 
 """ plot_stdP : Plot standard deviation of Plm """
 plot_stdP = {}
@@ -145,12 +148,14 @@ plot_stdP['IJs'] = [ 'AE' , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_E
 plot_stdP['GWslopes'] = [ 0 ]
 plot_stdP['norm'] = 1.
 plot_stdP['lmax'] = 15
+plot_stdP['wait for stdP'] = True #True, False
 
 """ plot_singular_values : Plot the singular values of the original Fisher matrix """
 plot_singular_values = {}
 plot_singular_values['IJs'] = [ 'AE' , 'AT' , 'ET' , 'AE_AT' , 'AE_ET' , 'AT_ET' , 'AE_AT_ET' ] 
 plot_singular_values['GWslopes'] = [ 0 ]
 plot_singular_values['lmax'] = 20
+plot_singular_values['wait for singular_values'] = True #True, False
 
 
 

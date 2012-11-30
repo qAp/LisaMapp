@@ -4,6 +4,7 @@ import sys
 import glob
 import cPickle as cpkl
 import numpy as np
+import matplotlib.pyplot as plt
 from optparse import OptionParser
 import AnisotropySearch as AS
 import PostProcess as PP
@@ -46,14 +47,13 @@ Pmap.xlm_to_plm() ; Pmap.xlm_to_qlm()
 Pmap.create_sky( nlon=options.nlon , nlat=options.nlat )
 Pmap.plm_to_P() ; Pmap.qlm_to_Q()
 
-figdir = os.path.dirname(figpath)
-PP.SkyMap_to_datfile(Pmap, 'temporary.dat')
-if options.plot_imag:
-    PP.project_SkyMap('temporary.dat', Ppath = figpath, Qpath = figdir + '/P_imag.png') 
-else:
-    PP.project_SkyMap('temporary.dat', Ppath = figpath)
-
-
-
+figdir = os.path.dirname( figpath )
+if figdir not in glob.glob( figdir ) :
+    os.system( 'mkdir -p %s' % figdir )
+if options.plot_imag :
+    Qpath = figdir + '/P_imag.png'
+else :
+    Qpath = None
+PP.project_SkyMap( Pmap , Ppath = figpath , Qpath = Qpath )
 
 
