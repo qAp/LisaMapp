@@ -33,7 +33,7 @@ P['GWslopes'] = [ 0 ]
 P['regMethod'] , P['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 P['lmax'] , P['nlon'] , P['nlat'] = 0 , 180 , 91
 P['mapnorm'] = 1.
-
+P['wait for XG'] = True
 
 """ do_PP : Calculate the clean map """
 PP = {}
@@ -43,7 +43,7 @@ PP['days'] = range( 1 , 365+1 )
 PP['regMethod'] , PP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 PP['lmax'] , PP['nlon'] , PP['nlat'] = 0 , 180 , 91
 PP['mapnorm'] = 1.
-
+PP['wait for XG'] = True
 
 """ do_sigma_avg : Calculate the sky-average standard deviation of Plm """
 sigma_avg = {}
@@ -79,6 +79,7 @@ stdPP['days'] = range( 1 , 365+1 )
 stdPP['regMethod'] , stdPP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 stdPP['lmax'] = 0
 stdPP['signal limit'] = 'strong' # 'weak' , 'both'
+stdPP['wait for SG'] = True
 
 
 """ do stdP : Calculate the standard deviation of Plm """
@@ -89,6 +90,8 @@ stdP['regMethod'] , stdP['regCutoff'] = 0 , 1e-3 #1 , 9.5e-4
 stdP['lmax'] = 0
 stdP['Spath'] = 'default'
 stdP['signal limit'] = 'strong' # 'weak' , 'both'
+stdP['wait for SG'] = True
+
 
 """ do_temp_optimals : Run the executable x_temp_optimals.py """
 temp_optimals = {}
@@ -96,7 +99,7 @@ temp_optimals['IJs'] = [ 'AE' ]
 temp_optimals['GWslopes'] = [ 0 ]
 temp_optimals['days'] = range( 1 , 365+1 )
 temp_optimals['lmax'] = 0
-
+temp_optimals['wait for jobs'] = True
 
 
 

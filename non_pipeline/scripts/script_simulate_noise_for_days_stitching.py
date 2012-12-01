@@ -56,7 +56,7 @@ for b in range( Nb ) :
                               shell=True , stdout=subprocess.PIPE )
         jobids += [ p.communicate()[0].rstrip() ]
         
-    time.sleep( 0.8 )
+    time.sleep( 3.0 )
 
 file = open( jobidspath , 'w' )
 for k in range( len( jobids ) ) :
